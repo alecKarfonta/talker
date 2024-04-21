@@ -1,8 +1,9 @@
-from color import Color
-from sentiment import SentimentScore
 from datetime import datetime
 #from DatabaseFactory import DatabaseFactory
 from uuid import uuid4
+# User imports
+from shared.color import Color
+from controllers.sentiment import SentimentScore
 
 class Comment():
     def __init__(self, commentor:str, comment:str, sentiment:SentimentScore,useDatabase:bool=True):
@@ -12,8 +13,8 @@ class Comment():
         self.comment = comment
         self.sentiment = sentiment
         self._isDatabase = useDatabase
-        if (useDatabase):
-            super().__init__(debug=True)
+        #if (useDatabase):
+        #    super().__init__(debug=True)
             
 
     def __repr__(self) -> str:

@@ -1,8 +1,8 @@
 import os
 import pickle
 import logging
-from color import Color
-from comment import Comment
+from shared.color import Color
+from models.comment import Comment
 
 class Memory():
     def __init__(self, prompt:Comment, comment:Comment, response:Comment):

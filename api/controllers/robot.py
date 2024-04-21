@@ -6,11 +6,11 @@ import num2words
 import pickle
 import logging
 from copy import copy
-#from accelerate import init_empty_weights
 import transformers
 from transformers import BitsAndBytesConfig
 from transformers import  GenerationConfig
 from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer, StoppingCriteriaList
+#from accelerate import init_empty_weights
 
 from numpy.random import random, choice
 #from fairseq.checkpoint_utils import load_model_ensemble_and_task_from_hf_hub
@@ -22,9 +22,11 @@ from numpy.random import random, choice
 from nltk.tokenize import sent_tokenize
 from nltk.tokenize import word_tokenize
 
-from color import Color
+import sys
+sys.path.append("..") 
+sys.path.append("../shared/") 
 
-from tts.voicebox import VoiceBox
+from color import Color
 
 # TODO: Implement a lookahead on text generation
 # so that the bot will generate an expected response

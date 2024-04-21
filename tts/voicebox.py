@@ -170,9 +170,9 @@ class VoiceBox():
                 use_deepspeed=False
             )
             # If is using the gpu
-            if self.config["model"]["device"] == "cuda":
+            if not self.config["model"]["device"] == "cpu":
                 self.logger.debug(f"{__class__.__name__}.init_model(): Sending model to gpu")
-                self.model.cuda()
+                self.model.to(self.config["model"]["device"])
 
         elif self.model_name == "xtts_v2":
             from TTS.tts.models.xtts import Xtts
@@ -198,16 +198,16 @@ class VoiceBox():
                 checkpoint_path=model_path,
                 vocab_path=vocab_path,
                 eval=True,
-                use_deepspeed=False
+                use_deepspeed=self.config["model"]["is_deepspeed"]
             )
             # If is using the gpu
-            if self.config["model"]["device"] == "cuda":
+            if not self.config["model"]["device"] == "cpu":
                 self.logger.debug(f"{__class__.__name__}.init_model(): Sending model to gpu")
-                self.model.cuda()
+                self.model.to(self.config["model"]["device"])
 
         elif self.model_name == "tortoise":
             from tortoise.api import TextToSpeech
-            self.model = TextToSpeech(use_deepspeed=True, kv_cache=True, device="cuda:0")
+            self.model = TextToSpeech(use_deepspeed=True, kv_cache=True, device=self.config["model"]["device"])
 
         # Else using Tacotron model
         elif self.model_name == "hf-tacotron2":

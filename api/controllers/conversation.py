@@ -14,6 +14,10 @@ import nltk
 from nltk.tokenize import word_tokenize
 from nltk.tag import pos_tag
 
+import sys
+sys.path.append("..") 
+sys.path.append("../shared/") 
+sys.path.append("../models/") 
 
 from info import Info
 from color import Color

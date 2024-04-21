@@ -19,11 +19,11 @@ sys.path.append("..")
 sys.path.append("../shared/") 
 sys.path.append("../models/") 
 
-from info import Info
-from color import Color
-from human import Human, Memory
-from sentiment import Sentiment, SentimentScore
+from shared.info import Info
+from shared.color import Color
 from models.comment import Comment
+from models.human import Human, Memory
+from controllers.sentiment import Sentiment, SentimentScore
 #from controllers.database_controller import DataBaseController
 
 logging.basicConfig(level=logging.INFO)
@@ -56,8 +56,9 @@ class Conversation():
         self.sentiment = Sentiment()
         self.is_debug = is_debug
         
-        self.voice_ip = "192.168.1.120"
-        self.voice_port = "8100"
+        #TODO: Move to env variable
+        #self.voice_ip = "192.168.1.196"
+        #self.voice_port = "8100"
 
         if "pygmalion" in robot.model_name.lower():
             self.model_type = "pygmalion"
@@ -290,10 +291,10 @@ class Conversation():
         wav, rate = None, None
         
         # If should speak response
-        if is_speak_response:
-            logging.info(f"{__class__.__name__}.{func_name}(): Reading response")
-            wav = self.tts(output)
-            #IPython.display.display(IPython.display.Audio(wav, rate=rate, autoplay=True))
+        #if is_speak_response:
+        #    logging.info(f"{__class__.__name__}.{func_name}(): Reading response")
+        #    wav = self.tts(output)
+        #    #IPython.display.display(IPython.display.Audio(wav, rate=rate, autoplay=True))
         
         # Get sentiment for the comment
         sentiment_dict = self.sentiment.get_sentiment(output)

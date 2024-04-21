@@ -3,8 +3,7 @@ from scipy.special import softmax
 from transformers import AutoModelForSequenceClassification
 from transformers import TFAutoModelForSequenceClassification
 from transformers import AutoTokenizer
-import csv
-import urllib.request
+
 
 class SentimentScore():
     def __init__(self, sentiment:str, positive_score:float, neutral_score:float, negative_score:float):
@@ -24,12 +23,6 @@ class Sentiment:
         self.model = AutoModelForSequenceClassification.from_pretrained(self.model_name)
         self.labels = ['negative', 'neutral', 'positive']
         
-        #labels=[]
-        #mapping_link = f"https://raw.githubusercontent.com/cardiffnlp/tweeteval/main/datasets/sentiment/mapping.txt"
-        #with urllib.request.urlopen(mapping_link) as f:
-        #    html = f.read().decode('utf-8').split("\n")
-        #    csvreader = csv.reader(html, delimiter='\t')
-        #self.labels = [row[1] for row in csvreader if len(row) > 1]
 
     def get_sentiment(self, text:str):
         """

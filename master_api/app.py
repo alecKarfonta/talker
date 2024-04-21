@@ -21,17 +21,6 @@ from scipy.io.wavfile import write
 import sys
 sys.path.append("..") 
 
-# User imports
-from controllers.conversation import Conversation
-from controllers.robot import Robot
-from models.comment import Comment
-from models.human import Human
-
-# Pre-load nltk libs
-import nltk
-nltk.download('punkt')
-nltk.download('averaged_perceptron_tagger')
-
 # Logging config
 logging.basicConfig(
     #filename='DockProc.log',
@@ -42,24 +31,28 @@ logging.basicConfig(
 
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
-logging.getLogger("speechbrain").setLevel(logging.WARNING)
-logging.getLogger("espeakng").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-fh = logging.FileHandler('chat_api.log')
+fh = logging.FileHandler('master_api.log')
 fh.setLevel(logging.DEBUG)
 logger.addHandler(fh)
 
-SERVICE_PORT = os.environ.get('SERVICE_PORT',5001)
+SERVICE_PORT = os.environ.get('SERVICE_PORT',"5000")
 SERVICE_HOST = os.environ.get('SERVICE_HOST',"0.0.0.0")
 SERVICE_DEBUG = os.environ.get('SERVICE_DEBUG','True')
+
+CHAT_API_HOST = os.environ.get('CHAT_API_HOST',"192.168.1.196")
+CHAT_API_PORT = os.environ.get('CHAT_API_PORT',"5001")
+
+TTS_API_HOST = os.environ.get('TTS_API_HOST',"192.168.1.196")
+TTS_API_PORT = os.environ.get('TTS_API_PORT',"8100")
 
 DATABASE_TYPE = os.environ.get('DATABASE_TYPE',"postgresql")
 DATABASE_USERNAME = os.environ.get('DATABASE_USER',"test")
 DATABASE_PASSWORD = os.environ.get('DATABASE_PASSWORD',"test")
 DATABASE_SCHEMA = os.environ.get('DATABASE_SCHEMA',"chat")
-DATABASE_HOST = os.environ.get('DATABASE_HOST',"127.0.0.1")
+DATABASE_HOST = os.environ.get('DATABASE_HOST',"192.168.1.4")
 TTS_URL=os.environ.get('SWC_TTS_URL',"http://localhost:8100/tts")
 
 SWAGGER_URL="/swagger"
@@ -70,7 +63,7 @@ swagger_ui_blueprint = get_swaggerui_blueprint(
     SWAGGER_URL,
     API_URL,
     config={
-        'app_name': 'Chat API'
+        'app_name': 'Master API'
     }
 )
 
@@ -81,24 +74,9 @@ db = SQLAlchemy(app)
 engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
 SessionClass = sessionmaker(bind=engine)
 
-# Init robot
-robot = Robot(
-              name="Major",
-              persona="A female military cyborg police officer living in the year 2032.",
-              model_name="l3utterfly/mistral-7b-v0.1-layla-v4",
-              is_use_bnb=True,
-              is_use_gpu=True,
-             )
-
-# Init coversation
-conversation = Conversation(robot=robot)
 
 def init_tables():
-    # Init tables
-    try:
-        Comment.__table__.create(engine)
-    except sqlalchemy.exc.ProgrammingError:
-        pass
+    pass
 
 
 @app.get("/test")
@@ -107,25 +85,66 @@ async def root():
 
 
 
-@app.route('/comment', methods=['POST']) 
-async def comment():
+class Comment(BaseModel):
+    comment: str 
+    commentor: str
+
+
+@app.post('/comment')
+def comment():
     logger.debug(f"comment()")
-    #logger.debug(f"comment(): {message = }")
-    #logger.debug(f"comment(): {api_comment.data = }")
 
-    data = request.get_json()
-    logger.debug(f"comment(): {data = }")
+    logger.debug(f"comment(): {request.data = }")
 
-    user_comment = data.get("comment", None)
-    user_commentor = data.get("commentor", None)
+    content = request.json
 
-    logger.debug(f"comment(): {user_comment = }")
-    logger.debug(f"comment(): {user_commentor = }")
-
+    comment = content.get("comment", None)
+    commenter = content.get("commenter", None)
     
-    response, wav = conversation.process_comment(commentor=user_commentor, comment=user_comment, is_speak_response=True)
+    json = {
+        "comment": comment,
+        "commenter": commenter
+    }
 
-    return {"message": "All good", "response": response, "wav" : json.dumps(wav)}, 200
+    logger.debug(f"{__name__}(): Making request to conversation api")
+    # Make request to conversation api
+    response = requests.post(url=f"http://{CHAT_API_HOST}:{CHAT_API_PORT}/comment", json=json)
+
+    if response.status_code != 200:
+        return {"message": "Error in conversation api"}, 500
+    
+    if "response" not in response.json():
+        return {"message": "Error in conversation api"}, 500
+    #if "wav" not in response.json():
+    #    return {"message": "Error in conversation api"}, 500
+    
+    #wav = response.json()["wav"]
+    user_response = message = response.json()["response"]
+
+    logger.debug(f"{__name__}(): {user_response = }")
+
+    logger.debug(f"{__name__}(): Making request to tts api")
+
+    # Make request to tts api
+    response = requests.post(url=f"http://{TTS_API_HOST}:{TTS_API_PORT}/tts", json={"text": user_response})
+
+    if response.status_code != 200:
+        return {"message": "Error in tts api"}, 500
+    
+    if "wav" not in response.json():
+        return {"message": "Error in tts api"}, 500
+    
+    if "rate" not in response.json():
+        return {"message": "Error in tts api"}, 500
+    
+    wav = response.json()["wav"]
+    rate = response.json()["rate"]  
+
+    logger.debug(f"{__name__}(): {np.mean(wav) = }")
+    
+
+    return {"message": "All good", "response": user_response}, 200
+
 
 
 

@@ -26,9 +26,9 @@
         "gpt_cond_len" : 2,
         "top_k" : 5, 
         "top_p" : 0.9, 
-        "temperature" : 0.000000001,
-        "length_penalty" : -2.5, 
-        "repetition_penalty" : 1.8
+        "temperature" : 0.00000005,
+        "length_penalty" : -1.5, 
+        "repetition_penalty" : 2.2
     },
     "disabled_synth_params" : {
         "decoder_iterations" : 5,

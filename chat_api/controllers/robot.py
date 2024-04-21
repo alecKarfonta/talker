@@ -26,7 +26,7 @@ import sys
 sys.path.append("..") 
 sys.path.append("../shared/") 
 
-from color import Color
+from shared.color import Color
 
 # TODO: Implement a lookahead on text generation
 # so that the bot will generate an expected response

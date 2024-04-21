@@ -39,7 +39,7 @@ services:
     container_name: chat_api
     #command: bash -c 'while !</dev/tcp/docker.for.mac.localhost/5432; do sleep 1; done;'
     depends_on:
-      - postgres
+      - flask_api
     environment:
       DATABASE_URL: postgres://test:test@postgres/chat
     ports:
@@ -47,29 +47,29 @@ services:
 
 
 
-  app:
-    build:
-      context: app
-      dockerfile: Dockerfile
-    container_name: app
-    #command: bash -c 'while !</dev/tcp/docker.for.mac.localhost/5432; do sleep 10; done; python app.py'
-    depends_on:
-      - postgres
-    environment:
-      DATABASE_URL: postgres://test:test@postgres/chat
-    ports:
-      - "81:81"
-    volumes:
-      - ./uploads:/uploads
+  #app:
+  #  build:
+  #    context: app
+  #    dockerfile: Dockerfile
+  #  container_name: app
+  #  #command: bash -c 'while !</dev/tcp/docker.for.mac.localhost/5432; do sleep 10; done; python app.py'
+  #  depends_on:
+  #    - chat_api
+  #  environment:
+  #    DATABASE_URL: postgres://test:test@postgres/chat
+  #  ports:
+  #    - "81:81"
+  #  volumes:
+  #    - ./uploads:/uploads
 
 
-  swagger_ui:
-    image: swaggerapi/swagger-ui
-    container_name: swagger_ui
-    ports:
-      - "8080:8080"
-    environment:
-      SWAGGER_JSON: /api-docs/swagger.json
-      BASE_URL: /api-docs
-    depends_on:
-      - app
+  #swagger_ui:
+  #  image: swaggerapi/swagger-ui
+  #  container_name: swagger_ui
+  #  ports:
+  #    - "8080:8080"
+  #  environment:
+  #    SWAGGER_JSON: /api-docs/swagger.json
+  #    BASE_URL: /api-docs
+  #  depends_on:
+  #    - app

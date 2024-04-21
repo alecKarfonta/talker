@@ -127,6 +127,8 @@ app.add_middleware(
 
 replace_list = [
     ("'", "'"),
+    ("You're", "You are"),
+    ("you're", "you are"),
     ("We're", "We are"),
     ("we're", "we are"),
     ("it's", "it is"),
@@ -781,12 +783,6 @@ async def tts(message: Message):
     # If given an empty string
     if not text or text.strip() == "":
         return {"message": "Error: Received an empty input string ", "wav": [], "rate" : str(24000)}
-
-    # Get wav from tts model or load from a pre-recorded file 
-    if (message.command == "weather"): 
-        logger.info("Loading a pre-recorded weather command response")
-        wav, rate = VoiceBox.load_wav_file_to_numpy("data/voices/trey.wav") 
-        push_to_queue(wav=wav, rate=rate)
 
     else: 
         wav = process_text(text, priority=message.priority, request_time=message.time, speed=speed, voice_clone=voice_clone)

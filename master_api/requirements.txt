@@ -2,13 +2,6 @@ requests
 scipy
 
 # NLP
-num2words
-nltk
-
-# External data
-googlesearch-python
-wikipedia
-
 
 # Acceleration 
 #optimum
@@ -16,7 +9,6 @@ wikipedia
 
 
 # API
-pydantic
 flask[async]>=2.0  
 Werkzeug>=2.0
 pandas
@@ -31,7 +23,4 @@ flask_swagger
 flask_swagger_ui
 pyyaml==6.0.1
 
-accelerate
-transformers
-datasets
 # DB

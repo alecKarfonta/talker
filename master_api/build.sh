@@ -1,0 +1,1 @@
+sudo docker build -t master_api:1.0 .

@@ -5,7 +5,7 @@ import logging
 import googlesearch
 import wikipedia
 
-from color import Color
+from shared.color import Color
 
 class Info():
     def __init__(self):
