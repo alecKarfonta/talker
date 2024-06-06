@@ -28,6 +28,7 @@ sys.path.append("../shared/")
 
 from shared.color import Color
 
+
 # TODO: Implement a lookahead on text generation
 # so that the bot will generate an expected response
 # to it's comment. It will then analyze the sentiment
@@ -222,7 +223,9 @@ class Robot():
                 logging.info(f"{__class__.__name__}.{__name__}(): Init mew Model: {self.model_name}")
                 self.model_source = self.model_name
                 self.model = AutoModelForCausalLM.from_pretrained(self.model_name, quantization_config=nf4_config)
-                self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+                self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, use_fast=True)
+                self.tokenizer.add_prefix_space = True
+
                 #config = AutoConfig.from_pretrained(model_name)
                 ##with init_empty_weights():
                 #self.model = AutoModelForCausalLM.from_config(config)
@@ -258,6 +261,14 @@ class Robot():
                 # Send model to gpu
                 logging.info(f"{__class__.__name__}.{__name__}(): Send model to gpu")
                 self.model.to("cuda")
+
+
+        #model_size = get_model_size(self.model)
+        #device = next(self.model.parameters()).device
+        #logging.info(f"{__class__.__name__}.{__name__}(): Model size = {model_size}")
+        #logging.info(f"{__class__.__name__}.{__name__}(): Model device = {device}")
+        logging.info(f"{__class__.__name__}.{__name__}(): Is the tokenizer fast?", self.tokenizer.is_fast)
+
         logging.info(f"{__class__.__name__}.{__name__}(): Done")
 
         return True
@@ -568,3 +579,18 @@ class _SentinelTokenStoppingCriteria(transformers.StoppingCriteria):
                 if torch.all(torch.eq(self.sentinel_token_ids, window)):
                     return True
         return False
+    
+
+
+def get_model_size(model, in_gb:bool=True) -> str:
+    param_size:int = 0
+    for param in model.parameters():
+        param_size += param.nelement() * param.element_size()
+    buffer_size:int = 0
+    for buffer in model.buffers():
+        buffer_size += buffer.nelement() * buffer.element_size()
+    
+    if in_gb:
+        return f"{round((param_size + buffer_size) / 1024**3, 1)} GB"
+    else:
+        return f"{int((param_size + buffer_size) / 1024**2)} MB"

@@ -19,6 +19,12 @@ import soundfile as sf
 from scipy.io.wavfile import read
 
 
+from melo.api import TTS
+
+from openvoice import se_extractor
+from openvoice.api import ToneColorConverter
+
+
 
 class VoiceBox():
     """
@@ -145,8 +151,18 @@ class VoiceBox():
 
         self.logger.debug(f"{__class__.__name__}.init_model(): {self.model_name = }")
 
+        if self.model_name == "openvoice":
+            ckpt_converter = 'checkpoints_v2/converter'
+            device = "cuda:0" if torch.cuda.is_available() else "cpu"
+            device = "cpu"
+            output_dir = 'outputs_v2'
+            speed = 1.0
+
+            tone_color_converter = ToneColorConverter(f'{ckpt_converter}/config.json', device=device)
+
+
         # If using fine-tuned voice model
-        if self.model_name == "xtts_v1.1":
+        elif self.model_name == "xtts_v1.1":
             from TTS.tts.models.xtts import Xtts
             from TTS.tts.configs.xtts_config import XttsConfig
             self.logger.debug(f"{__class__.__name__}.init_model(): Init xtts model")
