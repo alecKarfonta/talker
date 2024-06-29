@@ -51,16 +51,16 @@ fh = logging.FileHandler('chat_api.log')
 fh.setLevel(logging.DEBUG)
 logger.addHandler(fh)
 
-SERVICE_PORT = os.environ.get('SERVICE_PORT',5001)
-SERVICE_HOST = os.environ.get('SERVICE_HOST',"0.0.0.0")
-SERVICE_DEBUG = os.environ.get('SERVICE_DEBUG','True')
+SERVICE_PORT = os.environ.get('SERVICE_PORT', 5001)
+SERVICE_HOST = os.environ.get('SERVICE_HOST', "0.0.0.0")
+SERVICE_DEBUG = os.environ.get('SERVICE_DEBUG', 'True')
 
-DATABASE_TYPE = os.environ.get('DATABASE_TYPE',"postgresql")
-DATABASE_USERNAME = os.environ.get('DATABASE_USER',"test")
-DATABASE_PASSWORD = os.environ.get('DATABASE_PASSWORD',"test")
-DATABASE_SCHEMA = os.environ.get('DATABASE_SCHEMA',"chat")
-DATABASE_HOST = os.environ.get('DATABASE_HOST',"127.0.0.1")
-TTS_URL=os.environ.get('SWC_TTS_URL',"http://localhost:8100/tts")
+DATABASE_TYPE = os.environ.get('DATABASE_TYPE', "postgresql")
+DATABASE_USERNAME = os.environ.get('DATABASE_USER', "test")
+DATABASE_PASSWORD = os.environ.get('DATABASE_PASSWORD', "test")
+DATABASE_SCHEMA = os.environ.get('DATABASE_SCHEMA', "chat")
+DATABASE_HOST = os.environ.get('DATABASE_HOST', "127.0.0.1")
+#TTS_URL = os.environ.get('SWC_TTS_URL', "http://localhost:8100/tts")
 
 SWAGGER_URL="/swagger"
 API_URL="/static/swagger.yaml"

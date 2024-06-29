@@ -43,6 +43,16 @@ class PromptRequest(BaseModel):
     max_attempts: int = 10
     stop: str = None
 
+prompt_request = PromptRequest(
+    user_prompt="The robot walked into the room and said",
+    max_tokens=100,
+    temperature=0.3,
+    top_p=0.1,
+    echo=True,
+    overlap=500,
+    max_attempts=0,
+    stop=None
+)
 
 class TextResponse(BaseModel):
     generated_text: str
@@ -190,6 +200,11 @@ def generate_text(request: PromptRequest):
     except Exception as e:
         logger.error(f"{__name__}(): {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/health", summary="Health Check", description="Checks the health of the server.")
+def health_check():
+    return {"status": "OK"}
 
 
 @app.get("/", summary="Root Endpoint", description="Returns a welcome message.")

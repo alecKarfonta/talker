@@ -6,6 +6,9 @@ EXPOSE 22
 
 COPY requirements.txt .
 
+# Copy pip config
+COPY pip.conf /root/.pip/pip.conf
+
 RUN pip install -r requirements.txt
 
 COPY . .
@@ -13,26 +16,26 @@ COPY . .
 RUN chmod 777 /app/startup.sh
 
 # Install transformers from source
-RUN pip install "git+https://github.com/huggingface/transformers.git"
+#RUN pip install "git+https://github.com/huggingface/transformers.git"
 
 # Install accelerate from source
 #RUN pip install git+https://github.com/huggingface/accelerate
 
-RUN pip install -i https://pypi.org/simple/ bitsandbytes
-RUN pip install accelerate
-RUN pip install optimum
+#RUN pip install -i https://pypi.org/simple/ bitsandbytes
+#RUN pip install accelerate
+#RUN pip install optimum
 
 
 # Install auto-gptq from source
-RUN pip install auto-gptq --extra-index-url https://huggingface.github.io/autogptq-index/whl/cu118/
+#RUN pip install auto-gptq --extra-index-url https://huggingface.github.io/autogptq-index/whl/cu118/
 # Install bitsnbytes
 #RUN pip install bitsandbytes
 # Set cuda path for bitsandbytes
-RUN export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/conda/lib/libcudart.so
+#RUN export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/conda/lib/libcudart.so
 
-RUN pip install datasets
-RUN pip install pydub
-RUN pip install soundfile
+#RUN pip install datasets
+#RUN pip install pydub
+#RUN pip install soundfile
 
 
 

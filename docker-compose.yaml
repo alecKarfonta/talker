@@ -16,20 +16,20 @@ services:
       - ./db/data:/docker-entrypoint-initdb.d
 
 
-  flask_api:
-    build:
-      context: api
-      dockerfile: Dockerfile
-    container_name: flask_api
-    #command: bash -c 'while !</dev/tcp/docker.for.mac.localhost/5432; do sleep 1; done;'
-    depends_on:
-      - postgres
-    environment:
-      DATABASE_URL: postgres://test:test@postgres/chat
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./db/data:/data
+  #flask_api:
+  #  build:
+  #    context: api
+  #    dockerfile: Dockerfile
+  # container_name: flask_api
+  #  #command: bash -c 'while !</dev/tcp/docker.for.mac.localhost/5432; do sleep 1; done;'
+  #  depends_on:
+  #    - postgres
+  #  environment:
+  #    DATABASE_URL: postgres://test:test@postgres/chat
+  #  ports:
+  #    - "5000:5000"
+  #  volumes:
+  #    - ./db/data:/data
 
 
   chat_api:
@@ -39,11 +39,35 @@ services:
     container_name: chat_api
     #command: bash -c 'while !</dev/tcp/docker.for.mac.localhost/5432; do sleep 1; done;'
     depends_on:
-      - flask_api
+      - postgres
     environment:
       DATABASE_URL: postgres://test:test@postgres/chat
+      SERVICE_PORT: 5001
+      #SERVICE_HOST: 
+
+
     ports:
       - "5001:5001"
+
+
+  lamma_api:
+    build:
+      context: lamma_api
+      dockerfile: Dockerfile
+    container_name: lamma_api
+    #command: bash -c 'while !</dev/tcp/docker.for.mac.localhost/5432; do sleep 1; done;'
+    environment:
+      MODEL_NAME: mistral-layla
+    ports:
+      - "7001:7001"
+      - "8400:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
 
 

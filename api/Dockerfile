@@ -4,6 +4,9 @@ WORKDIR /app
 
 COPY requirements.txt .
 
+# Copy pip config
+COPY pip.conf /root/.pip/pip.conf
+
 RUN pip install -r requirements.txt
 
 COPY . .

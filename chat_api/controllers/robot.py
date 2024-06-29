@@ -199,6 +199,7 @@ class Robot():
         
 
     def init_models(self):
+        """
         # If using bits and bytes: https://huggingface.co/blog/4bit-transformers-bitsandbytes
         if self.is_use_bnb:
             logging.info(f"{__class__.__name__}.{__name__}(): Using bnb to quantize model")
@@ -270,7 +271,7 @@ class Robot():
         logging.info(f"{__class__.__name__}.{__name__}(): Is the tokenizer fast?", self.tokenizer.is_fast)
 
         logging.info(f"{__class__.__name__}.{__name__}(): Done")
-
+        """
         return True
     
 
@@ -309,14 +310,14 @@ class Robot():
         # Save start time
         start_time = time.time()
         # Check if needs to init models
-        if not self.model:
-            logging.error(f"{Color.F_Red}{__class__.__name__}.get_robot_response(): Error models not intialized{Color.F_White}")
-            # Init models
-            self.init_models(self.model_file, self.model_name, self.finetune_path)
+        #if not self.model:
+        #    logging.error(f"{Color.F_Red}{__class__.__name__}.get_robot_response(): Error models not intialized{Color.F_White}")
+        #    # Init models
+        #    self.init_models(self.model_file, self.model_name, self.finetune_path)
         
         # Clear memory
         logging.info(f"{__class__.__name__}.get_robot_response(): Clearing gpu memory")
-        torch.cuda.empty_cache()
+        #torch.cuda.empty_cache()
 
         # Randomly prepend the output with the person's name
         #if random() > .85:
@@ -330,29 +331,29 @@ class Robot():
             prompt = " ".join(prompt)
 
         # Encode input strings
-        tokenized_items = self.tokenizer(prompt, return_tensors="pt").to("cuda" if self.is_use_gpu else "cpu")
-        prompt_token_count = len(tokenized_items["input_ids"][0])
+        #tokenized_items = self.tokenizer(prompt, return_tensors="pt").to("cuda" if self.is_use_gpu else "cpu")
+        #prompt_token_count = len(tokenized_items["input_ids"][0])
 
         # Show input token length
-        logging.info(f"{__class__.__name__}.get_robot_response(): input token length = {tokenized_items['input_ids'].shape}")
+        #logging.info(f"{__class__.__name__}.get_robot_response(): input token length = {tokenized_items['input_ids'].shape}")
 
         # Check if the input is larger that the max allowed input
-        if tokenized_items['input_ids'].shape[0] > self.context_token_limit:
-            logging.warning(f"{__class__.__name__}.get_robot_response(): Context length too long. tokenized_items['input_ids'].shape[0] = {tokenized_items['input_ids'].shape[0]}")
+        #if tokenized_items['input_ids'].shape[0] > self.context_token_limit:
+        #    logging.warning(f"{__class__.__name__}.get_robot_response(): Context length too long. tokenized_items['input_ids'].shape[0] = {tokenized_items['input_ids'].shape[0]}")
 
         # Check that the input and model are on the same device
-        if tokenized_items["input_ids"].get_device() != self.model.device.index:
-            logging.error(f"{Color.F_Red}{__class__.__name__}.get_robot_response(): input and model on difference devices{Color.F_White}")
-            logging.info(f"{__class__.__name__}.get_robot_response(): input device = {tokenized_items['input_ids'].get_device()}")
-            logging.info(f"{__class__.__name__}.get_robot_response(): model device = {self.model.device.index}")
+        #if tokenized_items["input_ids"].get_device() != self.model.device.index:
+        #    logging.error(f"{Color.F_Red}{__class__.__name__}.get_robot_response(): input and model on difference devices{Color.F_White}")
+        #    logging.info(f"{__class__.__name__}.get_robot_response(): input device = {tokenized_items['input_ids'].get_device()}")
+        #    logging.info(f"{__class__.__name__}.get_robot_response(): model device = {self.model.device.index}")#
 
         # If needs to generate more than one response
-        if response_count > 1:
-            # For each response required
-            for index in range(response_count-1):
-                # Append a copy of the input to itself
-                tokenized_items["input_ids"] = torch.cat((tokenized_items["input_ids"], tokenized_items["input_ids"].clone()), dim=0)
-                tokenized_items["attention_mask"] = torch.cat((tokenized_items["attention_mask"], tokenized_items["attention_mask"].clone()), dim=0)
+        #if response_count > 1:
+        #    # For each response required
+        #    for index in range(response_count-1):
+        #        # Append a copy of the input to itself
+        #        tokenized_items["input_ids"] = torch.cat((tokenized_items["input_ids"], tokenized_items["input_ids"].clone()), dim=0)
+        #        tokenized_items["attention_mask"] = torch.cat((tokenized_items["attention_mask"], tokenized_items["attention_mask"].clone()), dim=0)
 
         # Create stopping criteria for generation
         stopping_words = copy(self.stopping_words)
@@ -362,24 +363,30 @@ class Robot():
                             f"{person}:", 
                             f"{person.upper()}:",  
         ])
-        stopping_list = []
-        for stopping_word in stopping_words:
-            stopping_list.append(_SentinelTokenStoppingCriteria(
-                sentinel_token_ids=self.tokenizer(
-                    stopping_word,
-                    add_special_tokens=False,
-                    return_tensors="pt",
-                ).input_ids.to("cuda" if self.is_use_gpu else "cpu"),
-                starting_idx=tokenized_items.input_ids.shape[-1]))            
-        stopping_criteria_list = StoppingCriteriaList(stopping_list)
+        
+        # TODO: Move to inference server
+        #stopping_list = []
+        #for stopping_word in stopping_words:
+        #    stopping_list.append(_SentinelTokenStoppingCriteria(
+        #        sentinel_token_ids=self.tokenizer(
+        #            stopping_word,
+        #            add_special_tokens=False,
+        #            return_tensors="pt",
+        #        ).input_ids.to("cuda" if self.is_use_gpu else "cpu"),
+        #        starting_idx=tokenized_items.input_ids.shape[-1]))            
+        #stopping_criteria_list = StoppingCriteriaList(stopping_list)
 
         # Show stopping words
         logging.info(f"{__class__.__name__}.get_robot_response(): stopping_words = {stopping_words}")
         
+        min_len = 100
+        max_len = 1024
+
         # Config genration
+        """
         generation_config = GenerationConfig(
-                                             min_len=min_len+prompt_token_count,
-                                             max_len=max_len+prompt_token_count,
+                                             min_len=min_len,
+                                             max_len=max_len,
                                              min_new_tokens=min_len, 
                                              max_new_tokens=max_len+100, 
                                              do_sample=True, 
@@ -401,17 +408,18 @@ class Robot():
                                              max_time=8,
                                              
         )
+        """
 
         logging.info(f"{__class__.__name__}.get_robot_response(): Generating output")
         # Generate output logits from model
-        with torch.no_grad():
-            logits = self.model.generate(
-                                        **tokenized_items,
-                                        #stopping_criteria=stopping_criteria_list, 
-                                        generation_config=generation_config,
-                                        )
+        #with torch.no_grad():
+        #    logits = self.model.generate(
+        #                                **tokenized_items,
+        #                                #stopping_criteria=stopping_criteria_list, 
+        #                                generation_config=generation_config,
+        #                                )
         # Show output logits shape
-        logging.info(f"{__class__.__name__}.get_robot_response(): {logits.shape = }")
+        #logging.info(f"{__class__.__name__}.get_robot_response(): {logits.shape = }")
         #logging.info(f"{__class__.__name__}.get_robot_response(): {logits = }")
 
         #stopping_tokens = self.tokenizer(self.stopping_words).input_ids
@@ -422,7 +430,8 @@ class Robot():
                     
 
         # Decode outputs
-        unprocessed_outputs = self.tokenizer.batch_decode(logits, skip_special_tokens=False)
+        #unprocessed_outputs = self.tokenizer.batch_decode(logits, skip_special_tokens=False)
+        """
         # Save a list of all possible outputs generated
         processed_outputs = []
         # For each output
@@ -557,7 +566,11 @@ class Robot():
         logging.info(f"{__class__.__name__}.get_robot_response(): tokens_per_sec = {tokens_per_sec}")
         logging.info(f"{__class__.__name__}.get_robot_response(): overall tokens_per_sec = {self.stats['tokens_per_sec']}")
         return processed_outputs
+        """
+        return ["mock response", "mock response 2"]
     
+
+
 class _SentinelTokenStoppingCriteria(transformers.StoppingCriteria):
 
     def __init__(self, sentinel_token_ids: torch.LongTensor,
