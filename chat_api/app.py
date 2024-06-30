@@ -76,6 +76,7 @@ swagger_ui_blueprint = get_swaggerui_blueprint(
 
 
 app = Flask(__name__, static_folder="cache")
+app.debug = True
 db_uri = f'{DATABASE_TYPE}://{DATABASE_USERNAME}:{DATABASE_PASSWORD}@{DATABASE_HOST}/{DATABASE_SCHEMA}'
 app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 logging.info(f"Connecting to db: {db_uri}")
@@ -135,6 +136,9 @@ async def comment_post():
     
     session = SessionClass()
     user_comment, response_comment, wav = conversation.process_comment(commentor=user_commentor, comment=user_comment, is_speak_response=False)
+
+    session.add(user_comment)
+    #session.add(response_comment)
     session.commit()
     session.close()
 

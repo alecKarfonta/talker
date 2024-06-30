@@ -26,14 +26,19 @@ class Comment(Base):
                  commentor:str, 
                  comment:str,
                  sentiment:SentimentScore=None, 
+                 positive_sentiment:float=None,
+                 negative_sentiment:float=None,
                  useDatabase:bool=True,
                  response_to_id:UUID=None
                 ):
-        self.id = str(uuid4())
+        self.id = str(uuid4())#
         self.response_to_id = response_to_id
         self.time = datetime.now()
         self.commentor = commentor
         self.comment = comment
+        #self.positive_sentiment = positive_sentiment
+        #self.negative_sentiment = negative_sentiment
+        self.sentiment = sentiment
         if sentiment:
             self.positive_sentiment = float(sentiment.positive_score)
             self.negative_sentiment = float(sentiment.negative_score)
@@ -51,12 +56,12 @@ class Comment(Base):
         return delta
         
     def printf(self):
-        if self.sentiment.sentiment == "positive":
+        if self.positive_sentiment > .75:
             return f"{Color.F_Green}{self.commentor}: {self.comment}{Color.F_White}"
-        if self.sentiment.sentiment == "neutral":
-            return f"{Color.F_Blue}{self.commentor}: {self.comment}{Color.F_White}"
-        if self.sentiment.sentiment == "negative":
+        elif self.negative_sentiment > .75:
             return f"{Color.F_Red}{self.commentor}: {self.comment}{Color.F_White}"
+        else:
+            return f"{Color.F_Blue}{self.commentor}: {self.comment}{Color.F_White}"
     
     def prompt(self):
         return f"{self.commentor}: {self.comment}"
