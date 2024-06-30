@@ -122,17 +122,16 @@ def run_tts(input_text:str, model, output_dir, source_se, target_se, speaker_id=
         output_path=save_path,
         message=encode_message)
 
-
     # Read the wav file back in
     samplerate, wav = wavfile.read(save_path)
 
     return wav, samplerate
-    
 
 
 @app.get("/test")
 async def root():
     return {"message": "All good"}, 200
+
 
 @app.post("/tts")
 def tts():

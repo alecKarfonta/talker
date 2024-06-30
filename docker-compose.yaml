@@ -80,6 +80,8 @@ services:
     #command: bash -c 'while !</dev/tcp/docker.for.mac.localhost/5432; do sleep 1; done;'
     environment:
       MODEL_NAME: mistral-layla
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
     ports:
       - "8001:5001"
     deploy:
@@ -89,7 +91,6 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
-
 
 
   #app:
