@@ -72,6 +72,24 @@ services:
               count: 1
               capabilities: [gpu]
 
+  tts_api:
+    build:
+      context: openvoice
+      dockerfile: Dockerfile
+    container_name: tts_api
+    #command: bash -c 'while !</dev/tcp/docker.for.mac.localhost/5432; do sleep 1; done;'
+    environment:
+      MODEL_NAME: mistral-layla
+    ports:
+      - "8001:5001"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
 
 
   #app:

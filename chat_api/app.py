@@ -135,10 +135,11 @@ async def comment_post():
     logger.debug(f"comment(): {type(user_commentor) = }")
     
     session = SessionClass()
+    session.expire_on_commit = False
     user_comment, response_comment, wav = conversation.process_comment(commentor=user_commentor, comment=user_comment, is_speak_response=False)
 
     session.add(user_comment)
-    #session.add(response_comment)
+    session.add(response_comment)
     session.commit()
     session.close()
 

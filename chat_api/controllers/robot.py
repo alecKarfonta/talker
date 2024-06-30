@@ -90,6 +90,7 @@ replace_list = [
 ]
 remove_list = ["#", "*", "</s>", "@", "$", "%", "^", "&", "*", "(", ")", ",", "<unk>", ":"]
 
+
 class Robot():
     def __init__(self, 
                  name:str,
@@ -257,6 +258,7 @@ class Robot():
             "user_prompt" : prompt,
             "max_len" : max_len,
             "response_count" : response_count,
+            "echo" : False,
             "stop" : stopping_words
         } 
         logging.info(f"{__class__.__name__}.get_robot_response(): {payload = }")

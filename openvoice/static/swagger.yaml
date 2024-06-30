@@ -1,0 +1,69 @@
+---
+swagger: '2.0'
+info:
+  title: TTS API
+  version: 1.0.0
+paths:
+  "/test":
+    get:
+      description: Test
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: Success
+
+  "/tts":
+    post:
+      description: Text to Speech
+      produces:
+      - application/json
+      parameters:
+      - in: body
+        name: body
+        description: Text to Speech
+        required: true
+        schema:
+          type: object
+          properties:
+            text:
+              type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: "#/components/schemas/SuccessResponse"
+        '400':
+          description: Error
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+definitions:
+  # Document Entries
+  Comment:
+    type: object
+    properties:
+      commentor:
+        type: string
+      comment:
+        type: string
+      sentiment:
+        type: string
+  Comments:
+    type: array
+    items:
+      $ref: "#/definitions/Comment"

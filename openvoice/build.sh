@@ -1,0 +1,1 @@
+sudo docker build -t tts_api:1.0 .
