@@ -15,7 +15,7 @@ from nltk.tokenize import word_tokenize
 from nltk.tag import pos_tag
 
 import sys
-sys.path.append("..") 
+#sys.path.append("..") 
 sys.path.append("../shared/") 
 sys.path.append("../models/") 
 
@@ -60,13 +60,6 @@ class Conversation():
         #self.voice_ip = "192.168.1.196"
         #self.voice_port = "8100"
 
-        if "pygmalion" in robot.model_name.lower():
-            self.model_type = "pygmalion"
-        elif "mytho" in robot.model_name.lower():
-            self.model_type = "mytho"
-        elif "mistral" in robot.model_name.lower():
-            self.model_type = "mistral"
-
         #self.dbc = DataBaseController()
         
     def __repr__(self):
@@ -104,6 +97,7 @@ class Conversation():
         
         return True
     
+
     def build_prompt(self,
                      commentor:str,
                      history_size:int=4
@@ -148,42 +142,22 @@ class Conversation():
             if memory_insert_count > self.max_memory_insert_size:
                 break
 
-        chat_history_prompt = chat_history.prompt()
+        #chat_history_prompt = chat_history.prompt()
 
-        if len(chat_history_prompt.split(" ")) > 2048:
-            logging.info(f"{__class__.__name__}.{__name__}(): Reducing size of chat history")
-            chat_history_prompt = chat_history_prompt.split(" ")[0:2048]
-            chat_history_prompt = " ".join(chat_history_prompt)
+        #if len(chat_history_prompt.split(" ")) > 2048:
+        #    logging.info(f"{__class__.__name__}.{__name__}(): Reducing size of chat history")
+        #    chat_history_prompt = chat_history_prompt.split(" ")[0:2048]
+        #    chat_history_prompt = " ".join(chat_history_prompt)
 
-        if self.model_type == "pygmalion":
-            prompt = f"{self.robot.name}'s Persona: {self.robot.persona}\n"
-            prompt += "<START>\n"
-            #prompt += "[DIALOGUE HISTORY]"       
-            # Dialogue history
-            prompt += chat_history_prompt
-        
-            # Randomly add things to prompt to steer conversation
-            #if random() > 0.75:
-            #    prompt += np.random.choice(self.robot.prompt_spices) + "\n"        
-            #if random() > 0.5:
-            #    prompt += f"Be {np.random.choice(self.robot.prompt_emotions)}.\n"
-            
-            # Robot name prompt
-            prompt += f"{self.robot.name}:"
+        prompt = f""
+        prompt += f"""<|im_start|>You are {self.robot.name}, {self.robot.persona}<|im_end|>\n"""
+        #prompt += chat_history_prompt
 
-        elif self.model_type == "mytho":
-            prompt = f"<System prompt/Character Card>\n"
-            prompt += "### Instruction:\n"
-            prompt += f"Write {self.robot.name}'s next reply in a chat between {commentor} and {self.robot.name}. Write a single reply only.\n"
-            prompt += chat_history_prompt
-            prompt += "### Response:"
+        for comment in chat_history.dialogue:
+            prompt += f"""<|im_start|>{comment.commentor}: {comment.comment}<|im_end|>\n"""
 
-        elif self.model_type == "mistral":
-            prompt = f"<|im_start|>system\n"
-            prompt += f"""You are {self.robot.name}, {self.robot.persona}\n"""
-            prompt += chat_history_prompt
-            prompt += f"{self.robot.name}:"
 
+        prompt += f"<|im_start|>{self.robot.name}:"
         
         return prompt
     
@@ -219,7 +193,7 @@ class Conversation():
 
         # Save comment
         user_comment = Comment(commentor, comment, self.sentiment.get_sentiment(comment))
-
+        #session.add(user_comment)
         #self.dbc.save_comment(user_comment)
         #user_comment.save()
         
@@ -227,24 +201,21 @@ class Conversation():
         # search for a corresponding wiki page
         # add the summary to the context
         prompt_info = None
-        proper_nouns = find_proper_nouns(comment)
-        if proper_nouns:
-            logging.info(f"{__class__.__name__}.{func_name}: Found proper nouns = {proper_nouns}")
-            prompt_info = self.info.find_wiki_page(proper_nouns)
+        #proper_nouns = find_proper_nouns(comment)
+        #if proper_nouns:
+        #    logging.info(f"{__class__.__name__}.{func_name}: Found proper nouns = {proper_nouns}")
+        #    prompt_info = self.info.find_wiki_page(proper_nouns)
         
-        # Get sentiment for the comment
-        sentiment_dict = self.sentiment.get_sentiment(comment)
-        sentiment = SentimentScore(sentiment_dict["sentiment"], sentiment_dict["positive_score"], sentiment_dict["neutral_score"], sentiment_dict["negative_score"])
         # Create comment object
         # Save comment to chat history
-        chat_history.add_comment(Comment(commentor, comment, sentiment))
+        chat_history.add_comment(user_comment)
         # Generate robot response
         prompt = self.build_prompt(commentor, self.chat_buffer_size)
-        if prompt_info:
-            prompt = prompt_info + "\n" + prompt
-            logging.info(f"{__class__.__name__}.{func_name}(): Updating prompt with wiki data")
+        #if prompt_info:
+        #    prompt = prompt_info + "\n" + prompt
+        #    logging.info(f"{__class__.__name__}.{func_name}(): Updating prompt with wiki data")
 
-        logging.info(f"{__class__.__name__}().{func_name}: Sending prompt to robot:")
+        logging.info(f"{__class__.__name__}().{func_name}: Sending prompt to robot: {prompt = }")
         logging.info("-"*100)
         logging.info(f"\n{Color.F_Cyan}{prompt}{Color.F_White}")
         logging.info("-"*100)
@@ -270,14 +241,13 @@ class Conversation():
                 if len(output) > longest_output_count:
                     longest_output_count = len(output)
                     longest_output_index = index
-                sentiment_dict = self.sentiment.get_sentiment(output)
-                sentiment = SentimentScore(sentiment_dict["sentiment"], sentiment_dict["positive_score"], sentiment_dict["neutral_score"], sentiment_dict["negative_score"])
-                comment = Comment(self.robot.name, output, sentiment)
-                score = sentiment_dict["positive_score"]
+                sentiment = self.sentiment.get_sentiment(output)
+                response_comment = Comment(self.robot.name, output, sentiment)
+                score = sentiment.positive_score
                 output_scores[index] = score
                 logging.info(f"{__class__.__name__}.{func_name}(): output[{index}] ")
                 logging.info(f"{__class__.__name__}.{func_name}(): \t {len(output) = }")
-                logging.info(f"{__class__.__name__}.{func_name}(): \t sentiment = {Color.F_Green}{int(100*round(sentiment_dict['positive_score'],2))} {Color.F_Red}{int(100*round(sentiment_dict['negative_score'],2))} {Color.F_White}")
+                logging.info(f"{__class__.__name__}.{func_name}(): \t sentiment = {Color.F_Green}{int(100*round(sentiment.positive_score,2))} {Color.F_Red}{int(100*round(sentiment.negative_score,2))} {Color.F_White}")
                 logging.info(f"{__class__.__name__}.{func_name}(): \t {comment.printf()}")
             # Give the longest response a boost in score
             output_scores[longest_output_index] += 0.25
@@ -297,18 +267,20 @@ class Conversation():
         #    #IPython.display.display(IPython.display.Audio(wav, rate=rate, autoplay=True))
         
         # Get sentiment for the comment
-        sentiment_dict = self.sentiment.get_sentiment(output)
-        sentiment = SentimentScore(sentiment_dict["sentiment"], sentiment_dict["positive_score"], sentiment_dict["neutral_score"], sentiment_dict["negative_score"])
+        sentiment = self.sentiment.get_sentiment(output)
+        response_comment = Comment(self.robot.name, output, sentiment, response_to_id=user_comment.id)
+        #session.add(response_comment)
+
         # Create comment object
-        self.chat_histories[commentor].add_comment(Comment(self.robot.name, output, sentiment))
+        self.chat_histories[commentor].add_comment(response_comment)
         
-        if len(chat_history.dialogue) > 2:
-            logging.info(f"{__class__.__name__}.{func_name}(): last comment = {self.chat_histories[commentor].dialogue[-2].comment}")
-            logging.info(f"{__class__.__name__}.{func_name}(): {self.chat_histories[commentor].dialogue[-2].sentiment}")
+        #if len(chat_history.dialogue) > 2:
+            #logging.info(f"{__class__.__name__}.{func_name}(): last comment = {self.chat_histories[commentor].dialogue[-2].comment}")
+            #logging.info(f"{__class__.__name__}.{func_name}(): {self.chat_histories[commentor].dialogue[-2].positive_sentiment}")
         # If has a complete set of prompt, generated response and user response
-        if len(chat_history.dialogue) > 3: 
+        if False and len(chat_history.dialogue) > 3: 
             # If the sentiment of the user response was positive
-            if self.chat_histories[commentor].dialogue[-2].sentiment.sentiment == "positive":
+            if self.chat_histories[commentor].dialogue[-2].positive_sentiment > 0.7:
                 # Save positive interaction
                 logging.info(f"{__class__.__name__}.{func_name}():  Got a positive response, saving memory")
                 prompt = self.chat_histories[commentor].dialogue[-4]
@@ -316,7 +288,7 @@ class Conversation():
                 response = self.chat_histories[commentor].dialogue[-2]
                 human.add_positive_memory(Memory(prompt, comment, response))
             # If the sentiment of the user response was positive
-            elif self.chat_histories[commentor].dialogue[-2].sentiment.sentiment == "negative":
+            elif self.chat_histories[commentor].dialogue[-2].negative_sentiment > 0.7:
                 # Save negative interaction
                 logging.info("f{__class__.__name__}.{func_name}():  Got a negative response, saving negative memory")
                 prompt = self.chat_histories[commentor].dialogue[-4]
@@ -329,7 +301,11 @@ class Conversation():
         logging.info(f"{__class__.__name__}.{func_name}(): runtime = {runtime}")
         logging.info(f"{__class__.__name__}.{func_name}(): tokens_per_sec = {tokens_per_sec}")
 
-        return output, wav
+
+        logging.info(f"{__class__.__name__}.{func_name}(): {user_comment = }")
+        logging.info(f"{__class__.__name__}.{func_name}(): {response_comment = }")
+
+        return user_comment, response_comment, wav
 
 
     def tts(self, text):

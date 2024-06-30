@@ -28,7 +28,51 @@ paths:
         '200':
           description: Success
 
+  "update_persona":
+    get:
+      summary: Update the persona of the robot
+      operationId: updatePersona
+      parameters:
+        - name: persona
+          in: query
+          required: true
+          description: The new persona to be assigned to the robot
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully updated the persona
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "All good"
+        '400':
+          description: No persona provided
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No persona provided"
 
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
 
 definitions:
   # Document Entries

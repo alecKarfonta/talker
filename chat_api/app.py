@@ -19,7 +19,7 @@ import numpy as np
 from scipy.io.wavfile import write
 
 import sys
-sys.path.append("..") 
+#sys.path.append("..") 
 
 # User imports
 from controllers.conversation import Conversation
@@ -75,8 +75,10 @@ swagger_ui_blueprint = get_swaggerui_blueprint(
 )
 
 
-app = Flask(__name__,static_folder="cache")
-app.config['SQLALCHEMY_DATABASE_URI'] = f'{DATABASE_TYPE}://{DATABASE_USERNAME}:{DATABASE_PASSWORD}@{DATABASE_HOST}/{DATABASE_SCHEMA}'
+app = Flask(__name__, static_folder="cache")
+db_uri = f'{DATABASE_TYPE}://{DATABASE_USERNAME}:{DATABASE_PASSWORD}@{DATABASE_HOST}/{DATABASE_SCHEMA}'
+app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
+logging.info(f"Connecting to db: {db_uri}")
 db = SQLAlchemy(app)
 engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
 SessionClass = sessionmaker(bind=engine)
@@ -84,10 +86,7 @@ SessionClass = sessionmaker(bind=engine)
 # Init robot
 robot = Robot(
               name="Major",
-              persona="A female military cyborg police officer living in the year 2032.",
-              model_name="l3utterfly/mistral-7b-v0.1-layla-v4",
-              is_use_bnb=True,
-              is_use_gpu=True,
+              persona="A female military cyborg police officer living in the year 2032."
              )
 
 # Init coversation
@@ -106,9 +105,20 @@ async def root():
     return {"message": "All good"}, 200
 
 
+@app.get("/update_persona")
+async def update_persona():
+    new_persona = request.args.get('persona')
+    if not new_persona:
+        logging.error(f"update_persona(): {new_persona = }")
+        return {"message": "No persona provided"}, 400  
+    logging.debug(f"update_persona(): {new_persona = }")
+    robot.update_person(new_persona)
+    return {"message": "All good"}, 200
+
+
 
 @app.route('/comment', methods=['POST']) 
-async def comment():
+async def comment_post():
     logger.debug(f"comment()")
     #logger.debug(f"comment(): {message = }")
     #logger.debug(f"comment(): {api_comment.data = }")
@@ -119,18 +129,28 @@ async def comment():
     user_comment = data.get("comment", None)
     user_commentor = data.get("commentor", None)
 
-    logger.debug(f"comment(): {user_comment = }")
+    #logger.debug(f"comment(): {user_comment = }")
     logger.debug(f"comment(): {user_commentor = }")
-
+    logger.debug(f"comment(): {type(user_commentor) = }")
     
-    response, wav = conversation.process_comment(commentor=user_commentor, comment=user_comment, is_speak_response=True)
+    session = SessionClass()
+    user_comment, response_comment, wav = conversation.process_comment(commentor=user_commentor, comment=user_comment, is_speak_response=False)
+    session.commit()
+    session.close()
 
-    return {"message": "All good", "response": response, "wav" : json.dumps(wav)}, 200
+    logger.debug(f"comment(): {user_comment = }")
+    logger.debug(f"comment(): {response_comment = }")
+
+    logger.debug(f"comment(): {type(user_comment) = }")
+    logger.debug(f"comment(): {type(response_comment) = }")
+    # Write document entry to db
+
+    return {"message": "All good", "response": response_comment.comment, "wav" : json.dumps(wav)}, 200
 
 
 
 
 # Run the Flask app
 if __name__ == '__main__':
-    #init_tables()
+    init_tables()
     app.run(debug=True, host="0.0.0.0", port=SERVICE_PORT)

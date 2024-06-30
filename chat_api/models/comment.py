@@ -1,3 +1,5 @@
+from sqlalchemy import Column, Integer, String, DateTime, Text, UUID, Boolean, Float
+
 from datetime import datetime
 #from DatabaseFactory import DatabaseFactory
 from uuid import uuid4
@@ -5,13 +7,36 @@ from uuid import uuid4
 from shared.color import Color
 from controllers.sentiment import SentimentScore
 
-class Comment():
-    def __init__(self, commentor:str, comment:str, sentiment:SentimentScore,useDatabase:bool=True):
+from sqlalchemy.orm import declarative_base
+
+Base = declarative_base()
+
+class Comment(Base):
+    __tablename__ = 'comment'
+
+    id = Column(UUID, primary_key=True, unique=True, nullable=False)
+    response_to_id = Column(UUID, nullable=True)
+    time = Column(DateTime, nullable=False)
+    commentor = Column(String, nullable=False)  
+    comment = Column(Text, nullable=False)
+    positive_sentiment = Column(Float, nullable=True)
+    negative_sentiment = Column(Float, nullable=True)
+
+    def __init__(self, 
+                 commentor:str, 
+                 comment:str,
+                 sentiment:SentimentScore=None, 
+                 useDatabase:bool=True,
+                 response_to_id:UUID=None
+                ):
         self.id = str(uuid4())
+        self.response_to_id = response_to_id
         self.time = datetime.now()
         self.commentor = commentor
         self.comment = comment
-        self.sentiment = sentiment
+        if sentiment:
+            self.positive_sentiment = float(sentiment.positive_score)
+            self.negative_sentiment = float(sentiment.negative_score)
         self._isDatabase = useDatabase
         #if (useDatabase):
         #    super().__init__(debug=True)
@@ -35,5 +60,18 @@ class Comment():
     
     def prompt(self):
         return f"{self.commentor}: {self.comment}"
+
+    def to_dict(self):
+        return {
+            "id" : self.id,
+            "time" : self.time,
+            "commentor" : self.commentor,
+            "comment" : self.comment,
+            "positive_sentiment" : self.positive_sentiment,
+            "negative_sentiment" : self.negative_sentiment
+        }
+    
+    def __str__(self):
+        return str(self.to_dict())
         
         

@@ -43,15 +43,18 @@ class Sentiment:
                 s = scores[ranking[i]]
                 label_scores[l] = s
             #return [labels[ranking[0]], label_scores["positive"], label_scores["neutral"], label_scores["negative"]]
-            return {"sentiment" : self.labels[ranking[0]],
-                    "positive_score" : label_scores["positive"], 
-                    "neutral_score" : label_scores["neutral"], 
-                    "negative_score" : label_scores["negative"]
-                   }
+            return SentimentScore(self.labels[ranking[0]], label_scores["positive"], label_scores["neutral"], label_scores["negative"])
+            #return {"sentiment" : self.labels[ranking[0]],
+            #        "positive_score" : label_scores["positive"], 
+            #        "neutral_score" : label_scores["neutral"], 
+            #        "negative_score" : label_scores["negative"]
+            #       }
         except:
+            
             print (f"Sentiment(): Failed to get sentiment for text = {text}")
-            return {"sentiment" : "error",
-                    "positive_score" : 0.0, 
-                    "neutral_score" : 0.0, 
-                    "negative_score" : 0.0
-                   }
+            return None
+            #return {"sentiment" : "error",
+            #        "positive_score" : 0.0, 
+            #        "neutral_score" : 0.0, 
+            #        "negative_score" : 0.0
+            #       }

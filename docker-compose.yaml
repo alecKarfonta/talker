@@ -43,18 +43,21 @@ services:
     environment:
       DATABASE_URL: postgres://test:test@postgres/chat
       SERVICE_PORT: 5001
+      LLAMA_HOST: 192.168.1.196      
+      DATABASE_HOST: 192.168.1.196
       #SERVICE_HOST: 
 
 
     ports:
       - "5001:5001"
+      - "2222:22"
 
 
-  lamma_api:
+  llama_api:
     build:
-      context: lamma_api
+      context: llama_api
       dockerfile: Dockerfile
-    container_name: lamma_api
+    container_name: llama_api
     #command: bash -c 'while !</dev/tcp/docker.for.mac.localhost/5432; do sleep 1; done;'
     environment:
       MODEL_NAME: mistral-layla
