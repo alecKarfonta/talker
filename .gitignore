@@ -7,4 +7,5 @@ DF_store
 *.m4a
 openvoice/checkpoints_v2/*
 openvoice/resources/
-openvoice/OpenVoice/*
+openvoice/OpenVoice_git/*
+*.pyc
