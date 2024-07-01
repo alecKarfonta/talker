@@ -38,7 +38,7 @@ fh = logging.FileHandler('tts_api.log')
 fh.setLevel(logging.DEBUG)
 logger.addHandler(fh)
 
-SERVICE_PORT = os.environ.get('SERVICE_PORT', 5000)
+SERVICE_PORT = os.environ.get('SERVICE_PORT', 5001)
 SERVICE_HOST = os.environ.get('SERVICE_HOST', "0.0.0.0")
 SERVICE_DEBUG = os.environ.get('SERVICE_DEBUG', 'True')
 

@@ -1,6 +1,9 @@
 #FROM python:3.9-slim
 FROM nvidia/cuda:11.2.2-cudnn8-runtime-ubuntu20.04
 
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
+
 # Set work directory
 WORKDIR /app
 
@@ -21,9 +24,12 @@ python3.9-venv \
 python3.9-dev \
 && apt-get clean
 
-# Set Python 3.9 as the default python3
+# Install pip for Python 3.9
+RUN wget https://bootstrap.pypa.io/get-pip.py && python3.9 get-pip.py
+
+# Set Python 3.9 and pip3.9 as the default python3 and pip3
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1
-RUN update-alternatives --install /usr/bin/pip3 pip3 /usr/bin/pip3 1
+RUN update-alternatives --install /usr/bin/pip3 pip3 /usr/local/bin/pip3.9 1
 
 # Upgrade pip and install pip packages
 RUN python3.9 -m ensurepip
@@ -37,23 +43,25 @@ COPY pip.conf /root/.pip/pip.conf
 
 COPY requirements.txt requirements.txt
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Copy the application files
 COPY . .
 
 #RUN git clone git@github.com:myshell-ai/OpenVoice.git
 
-RUN pip install -e OpenVoice
-RUN pip install -e MeloTTS
+RUN pip3 install -e OpenVoice
+RUN pip3 install git+https://github.com/myshell-ai/MeloTTS.git
+
+#RUN pip3 install -e MeloTTS
 
 #RUN pip install git+https://github.com/myshell-ai/MeloTTS.git
 
-RUN python -m unidic download
+RUN python3.9 -m unidic download
 
 
 # Expose the port the app runs on
 EXPOSE 5001
 
 # Run the application
-CMD ["python", "app.py"]
+CMD ["python3", "app.py"]
