@@ -1,5 +1,8 @@
 #FROM python:3.9-slim
-FROM nvidia/cuda:11.2.2-cudnn8-runtime-ubuntu20.04
+#FROM nvidia/cuda:11.2.2-cudnn8-runtime-ubuntu20.04
+#FROM nvcr.io/nvidia/pytorch:21.10-py3
+FROM nvidia/cuda:11.2.2-cudnn8-devel-ubuntu20.04
+
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
@@ -43,15 +46,20 @@ COPY pip.conf /root/.pip/pip.conf
 
 COPY requirements.txt requirements.txt
 
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip3.9 install --no-cache-dir -r requirements.txt
+
+RUN pip3.9 install torch==2.2.2+cu118 -f https://download.pytorch.org/whl/torch_stable.html
+#torchvision==0.11.2+cu112 torchaudio==0.10.1+cu112 
 
 # Copy the application files
 COPY . .
 
 #RUN git clone git@github.com:myshell-ai/OpenVoice.git
 
-RUN pip3 install -e OpenVoice
-RUN pip3 install git+https://github.com/myshell-ai/MeloTTS.git
+RUN pip3.9 install -e OpenVoice
+RUN pip3.9 install git+https://github.com/myshell-ai/MeloTTS.git
+
+
 
 #RUN pip3 install -e MeloTTS
 
@@ -64,4 +72,5 @@ RUN python3.9 -m unidic download
 EXPOSE 5001
 
 # Run the application
-CMD ["python3", "app.py"]
+#CMD ["python3", "app.py"]
+CMD ["./startup.sh"]

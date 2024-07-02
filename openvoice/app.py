@@ -62,7 +62,6 @@ swagger_ui_blueprint = get_swaggerui_blueprint(
 
 ckpt_converter = 'checkpoints_v2/converter'
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
-device = "cpu"
 output_dir = 'outputs_v2'
 speed = 1.0
 
