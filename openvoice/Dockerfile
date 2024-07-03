@@ -67,8 +67,8 @@ RUN pip3.9 install git+https://github.com/myshell-ai/MeloTTS.git
 
 RUN python3.9 -m unidic download
 
-RUN export LD_LIBRARY_PATH=/usr/local/lib/python3.9/dist-packages/nvidia/cudnn/lib/:$LD_LIBRARY_PATH
-
+ENV LD_LIBRARY_PATH=/usr/local/lib/python3.9/dist-packages/nvidia/cudnn/lib/:$LD_LIBRARY_PATH
+ENV PATH=/usr/local/cuda/bin:$PATH
 
 # Expose the port the app runs on
 EXPOSE 5001
