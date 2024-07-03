@@ -5,4 +5,5 @@ flask_swagger
 flask_swagger_ui
 Flask-RESTful
 Flask-SQLAlchemy
+mecab-python3
 #torch==

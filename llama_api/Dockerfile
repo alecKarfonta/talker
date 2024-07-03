@@ -31,7 +31,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Set environment variables for CUDA
 ENV CUDAToolkit_ROOT /usr/local/cuda
 
-RUN CMAKE_ARGS="-DLLAMA_CUBLAS=on" FORCE_CMAKE=1 pip install llama-cpp-python
+RUN CMAKE_ARGS="-DGGML_CUDA=ON" FORCE_CMAKE=1 pip install llama-cpp-python
 
 #RUN wget https://huggingface.co/TheBloke/zephyr-7B-beta-GGUF/resolve/main/zephyr-7b-beta.Q4_0.gguf?ref=localhost
 

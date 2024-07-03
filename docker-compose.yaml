@@ -15,23 +15,6 @@ services:
     volumes:
       - ./db/data:/docker-entrypoint-initdb.d
 
-
-  #flask_api:
-  #  build:
-  #    context: api
-  #    dockerfile: Dockerfile
-  # container_name: flask_api
-  #  #command: bash -c 'while !</dev/tcp/docker.for.mac.localhost/5432; do sleep 1; done;'
-  #  depends_on:
-  #    - postgres
-  #  environment:
-  #    DATABASE_URL: postgres://test:test@postgres/chat
-  #  ports:
-  #    - "5000:5000"
-  #  volumes:
-  #    - ./db/data:/data
-
-
   chat_api:
     build:
       context: chat_api
@@ -47,11 +30,9 @@ services:
       DATABASE_HOST: 192.168.1.196
       #SERVICE_HOST: 
 
-
     ports:
       - "5001:5001"
       - "2222:22"
-
 
   llama_api:
     build:
@@ -69,7 +50,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              count: 1
+              device_ids: ['0']
               capabilities: [gpu]
 
   tts_api:
@@ -89,33 +70,5 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              count: 1
+              device_ids: ['1']
               capabilities: [gpu]
-
-
-  #app:
-  #  build:
-  #    context: app
-  #    dockerfile: Dockerfile
-  #  container_name: app
-  #  #command: bash -c 'while !</dev/tcp/docker.for.mac.localhost/5432; do sleep 10; done; python app.py'
-  #  depends_on:
-  #    - chat_api
-  #  environment:
-  #    DATABASE_URL: postgres://test:test@postgres/chat
-  #  ports:
-  #    - "81:81"
-  #  volumes:
-  #    - ./uploads:/uploads
-
-
-  #swagger_ui:
-  #  image: swaggerapi/swagger-ui
-  #  container_name: swagger_ui
-  #  ports:
-  #    - "8080:8080"
-  #  environment:
-  #    SWAGGER_JSON: /api-docs/swagger.json
-  #    BASE_URL: /api-docs
-  #  depends_on:
-  #    - app
