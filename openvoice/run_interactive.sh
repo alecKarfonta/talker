@@ -9,5 +9,5 @@ fi
 
 # Run the new container
 echo "Running the new container..."
-docker run -it --name tts_api -p 8001:5001 -p 2225:22 --gpus '"device=0"' --entrypoint '/bin/bash' tts_api:1.0
+docker run -it --name tts_api -p 8001:5001 -p 2223:22 --gpus '"device=0"' --entrypoint '/bin/bash' tts_api:1.0
         

@@ -9,3 +9,4 @@ openvoice/checkpoints_v2/*
 openvoice/resources/
 openvoice/OpenVoice_git/*
 *.pyc
+.DS_Store

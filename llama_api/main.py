@@ -43,7 +43,11 @@ class PromptRequest(BaseModel):
     max_attempts: int = 10
     response_count: int = 1
     stop: str = None
+    is_repeating: bool = False
     is_story_mode: bool = False
+    repeat_penalty: float = 1.2
+    frequency_penalty: float = 0.0
+    presence_penalty: float = 0.0
 
 prompt_request = PromptRequest(
     user_prompt="The robot walked into the room and said",
@@ -76,12 +80,14 @@ def conversation_post(request: PromptRequest):
         "top_p" : request.top_p, # Default 0.1
         "temperature" : request.temperature, # Default 0.3
         "max_tokens" : request.max_tokens, # Default 100
-        "repeat_penalty" : 1.2, # Default 1.1
-        "frequency_penalty" : 0.0, # Default 0.0
-        "presence_penalty" : 0.0, # Default 0.0
+        "repeat_penalty" : request.repeat_penalty, # Default 1.1
+        "frequency_penalty" : request.frequency_penalty, # Default 0.0
+        "presence_penalty" : request.presence_penalty, # Default 0.0
     }
-    is_repeating = False
+    is_repeating = request.is_repeating
     is_story_mode = request.is_story_mode
+
+    logger.debug(f'{__name__}(): {request.user_prompt = }')
     try:
         model_output = model(
             request.user_prompt,

@@ -84,10 +84,17 @@ db = SQLAlchemy(app)
 engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
 SessionClass = sessionmaker(bind=engine)
 
+characters = {
+    "Major" : {
+        "name" : "Major",
+        "persona" : "A female military cyborg police officer living in the year 2032.",
+    }
+}
+
 # Init robot
 robot = Robot(
-              name="Major",
-              persona="A female military cyborg police officer living in the year 2032."
+              name=characters["Major"]["name"],
+              persona=characters["Major"]["persona"]
              )
 
 # Init coversation
@@ -108,14 +115,23 @@ async def root():
 
 @app.get("/update_persona")
 async def update_persona():
-    new_persona = request.args.get('persona')
-    if not new_persona:
-        logging.error(f"update_persona(): {new_persona = }")
-        return {"message": "No persona provided"}, 400  
+    character_name = request.args.get('character_name', None)
+    new_persona = request.args.get('persona', None)
+    if not new_persona and not character_name:
+        logging.error(f"update_persona(): Must provide a character name or persona")
+        return {"message": " Must provide a character name or persona"}, 400  
     logging.debug(f"update_persona(): {new_persona = }")
-    robot.update_person(new_persona)
-    return {"message": "All good"}, 200
 
+    if new_persona:
+        robot.update_person(new_persona)
+        return {"message": "All good"}, 200
+    
+    if character_name:
+        if character_name not in characters:
+            logging.error(f"update_persona(): Character name not found")
+            return {"message": "Character name not found"}, 400
+        robot.update_person(characters[character_name]["persona"])
+        return {"message": "All good"}, 200
 
 
 @app.route('/comment', methods=['POST']) 
@@ -127,6 +143,7 @@ async def comment_post():
     data = request.get_json()
     logger.debug(f"comment(): {data = }")
 
+    prompt = data.get('prompt', None)
     user_comment = data.get("comment", None)
     user_commentor = data.get("commentor", None)
 
@@ -136,7 +153,7 @@ async def comment_post():
     
     session = SessionClass()
     session.expire_on_commit = False
-    user_comment, response_comment, wav = conversation.process_comment(commentor=user_commentor, comment=user_comment, is_speak_response=False)
+    user_comment, response_comment, wav = conversation.process_comment(commentor=user_commentor, comment=user_comment, prompt=prompt, is_speak_response=False)
 
     session.add(user_comment)
     session.add(response_comment)
@@ -152,6 +169,59 @@ async def comment_post():
 
     return {"message": "All good", "response": response_comment.comment, "wav" : json.dumps(wav)}, 200
 
+
+@app.route('/characters', methods=['GET'])
+def get_characters():
+    logger.debug(f"{__name__}(): Getting all characters")
+    return jsonify({"characters": characters}), 200
+
+@app.route('/characters', methods=['POST'])
+def add_character():
+    data = request.get_json()
+    persona = data['persona']
+    char_name = data['name']
+    characters[char_name] = {
+        "name" : char_name,
+        "persona" : persona
+    }
+    
+    logger.debug(f"{__name__}(): Added character with ID {char_id} and name {char_name}")
+    
+    return jsonify({"message": "Character added successfully", "id": char_id, "name": char_name}), 201
+
+@app.route('/characters/<char_id>', methods=['GET'])
+def get_character(char_id):
+    logger.debug(f"{__name__}(): Getting character with ID {char_id}")
+    
+    character = characters.get(char_id)
+    if character:
+        return jsonify({"name": character["name"], "persona": character["persona"]}), 200
+    else:
+        return jsonify({"message": "Character not found"}), 404
+
+@app.route('/characters/<char_id>', methods=['PUT'])
+def update_character(char_id):
+    data = request.get_json()
+    char_name = data.get('name', None)
+
+    if not char_name:
+        return jsonify({"message": "Must provide a name to update"}), 400
+    
+    if char_id in characters:
+        characters[char_id] = char_name
+        logger.debug(f"{__name__}(): Updated character with ID {char_id} to new name {char_name}")
+        return jsonify({"message": "Character updated successfully", "id": char_id, "name": char_name}), 200
+    else:
+        return jsonify({"message": "Character not found"}), 404
+
+@app.route('/characters/<char_id>', methods=['DELETE'])
+def delete_character(char_id):
+    if char_id in characters:
+        del characters[char_id]
+        logger.debug(f"{__name__}(): Deleted character with ID {char_id}")
+        return jsonify({"message": "Character deleted successfully", "id": char_id}), 200
+    else:
+        return jsonify({"message": "Character not found"}), 404
 
 
 

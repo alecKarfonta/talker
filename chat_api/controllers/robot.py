@@ -224,7 +224,7 @@ class Robot():
         #    prompt = prompt + f"Well {person} "
 
         # If prompt is longer than max allowed input size
-        if len(prompt.split(" ")) > 1024:
+        if len(prompt.split(" ")) > 2048:
             logging.warning(f"{Color.F_Yellow}{__class__.__name__}.get_robot_response(): Prompt too long: {len(prompt.split(' '))}. Truncating {Color.F_White}")
             prompt = prompt.split(" ")
             prompt = prompt[-1024:]
@@ -244,14 +244,9 @@ class Robot():
         # Show stopping words
         logging.info(f"{__class__.__name__}.get_robot_response(): stopping_words = {stopping_words}")
         
-        min_len = 100
-        max_len = 1024
-
         logging.info(f"{__class__.__name__}.get_robot_response(): Generating output")
 
         endpoint = f"http://{LLAMA_HOST}:{LLAMA_PORT}/generate_text"
-
-
         logging.info(f"{__class__.__name__}.get_robot_response(): {endpoint = }")
 
         payload = {

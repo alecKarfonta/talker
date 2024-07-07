@@ -20,6 +20,10 @@ RUN apt-get update && apt-get install -y \
     software-properties-common \
     && apt-get clean
 
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    && apt-get clean
+
 # Add deadsnakes PPA and install Python 3.9
 RUN add-apt-repository ppa:deadsnakes/ppa && apt-get update && apt-get install -y \
 python3.9 \
@@ -70,9 +74,23 @@ RUN python3.9 -m unidic download
 ENV LD_LIBRARY_PATH=/usr/local/lib/python3.9/dist-packages/nvidia/cudnn/lib/:$LD_LIBRARY_PATH
 ENV PATH=/usr/local/cuda/bin:$PATH
 
+ENV FLASK_ENV=development
+
+
+
+# Install OpenSSH server
+RUN apt-get update && \
+    apt-get install -y openssh-server
+
+RUN useradd -rm -d /home/ubuntu -s /bin/bash -g root -G sudo -u 1000 test
+
+RUN echo 'test:test' | chpasswd
+
+RUN service ssh start
+
 # Expose the port the app runs on
 EXPOSE 5001
-
+EXPOSE 22
 # Run the application
 CMD ["python3", "app.py"]
 #CMD ["./startup.sh"]

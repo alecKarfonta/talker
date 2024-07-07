@@ -168,7 +168,8 @@ class Conversation():
                         response_length_modifier:int=0,
                         min_allowed_respose_len:int=2,
                         response_count:int=3,
-                        is_speak_response:bool=False
+                        is_speak_response:bool=False,
+                        prompt=None
                        ):
         """
         Given a comment from a user, add the comment to the log and 
@@ -209,8 +210,9 @@ class Conversation():
         # Create comment object
         # Save comment to chat history
         chat_history.add_comment(user_comment)
-        # Generate robot response
-        prompt = self.build_prompt(commentor, self.chat_buffer_size)
+        if not prompt:
+            # Generate robot response
+            prompt = self.build_prompt(commentor, self.chat_buffer_size)
         #if prompt_info:
         #    prompt = prompt_info + "\n" + prompt
         #    logging.info(f"{__class__.__name__}.{func_name}(): Updating prompt with wiki data")

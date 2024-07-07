@@ -38,7 +38,108 @@ paths:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
 
+  "/upload_voice":
+    post:
+      tags:
+        - "audio"
+      summary: "Upload WAV Float Array"
+      description: "Upload a WAV float array and save it to a file"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "JSON payload with wav float array and file name"
+          required: true
+          schema:
+            type: "object"
+            required:
+              - "wav"
+              - "voice_name"
+            properties:
+              wav:
+                type: "array"
+                items:
+                  type: "number"
+                description: "The WAV float array"
+              voice_name:
+                type: "string"
+                description: "The name to save the WAV file as"
+      responses:
+        200:
+          description: "File uploaded and processed successfully"
+          schema:
+            type: "object"
+            properties:
+              message:
+                type: "string"
+              file_name:
+                type: "string"
 
+/list_voices:
+    get:
+      tags:
+        - "audio"
+      summary: "List all uploaded voice files"
+      description: "Retrieve a list of all uploaded voice files"
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: "A list of all uploaded voice files"
+          schema:
+            type: "object"
+            properties:
+              voices:
+                type: "array"
+                items:
+                  type: "string"
+                description: "List of file names"
+                
+ /update_source_se:
+    post:
+      tags:
+        - "source_se"
+      summary: "Update source_se value"
+      description: "Update the source_se value using a key matching one of the .pth filenames in checkpoints_v2/base_speakers/ses/"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "JSON payload with key"
+          required: true
+          schema:
+            type: "object"
+            required:
+              - "key"
+            properties:
+              key:
+                type: "string"
+                description: "The key matching a .pth filename"
+      responses:
+        200:
+          description: "source_se updated successfully"
+          schema:
+            type: "object"
+            properties:
+              message:
+                type: "string"
+              key:
+                type: "string"
+        404:
+          description: "Key not found"
+          schema:
+            type: "object"
+            properties:
+              message:
+                type: "string"
+              key:
+                type: "string"
 components:
   schemas:
     ErrorResponse:
