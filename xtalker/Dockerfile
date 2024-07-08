@@ -37,8 +37,8 @@ RUN pip3 install --no-cache-dir --upgrade pip
 RUN pip3 install -r requirements.txt
 
 #RUN pip install ffmpeg-python torch flask
-RUN pip install torch==2.0.0+cu117 -f https://download.pytorch.org/whl/torch_stable.html
-RUN pip install torchvision==0.15.1+cu117 -f https://download.pytorch.org/whl/torch_stable.html
+RUN pip install torch==2.1.1+cu121 -f https://download.pytorch.org/whl/torch_stable.html
+RUN pip install torchvision==0.16.1+cu121 -f https://download.pytorch.org/whl/torch_stable.html
 RUN pip install torchaudio==2.0.1 -f https://download.pytorch.org/whl/torch_stable.html
 #RUN pip install ffmpeg
 #run pip install numpy==1.23.4 opencv-python tqdm Pillow python-magic

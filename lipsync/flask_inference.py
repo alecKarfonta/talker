@@ -19,6 +19,10 @@ import numpy as np
 #download models, script will not download over existing
 os.system("bash scripts/download_models.sh")
 
+from src.facerender.pirender_animate import AnimateFromCoeff_PIRender
+
+
+import platform
 
 app = Flask(__name__,static_folder="cache")
 
@@ -66,7 +70,9 @@ current_root_path = os.path.split(sys.argv[0])[0]
 sadtalker_paths = init_path(global_settings.checkpoint_dir, os.path.join(current_root_path, 'src/config'), global_settings.size, global_settings.old_version, global_settings.preprocess)
 preprocess_model = CropAndExtract(sadtalker_paths, global_settings.device)
 audio_to_coeff = Audio2Coeff(sadtalker_paths,  global_settings.device)    
-animate_from_coeff = AnimateFromCoeff(sadtalker_paths, global_settings.device)
+#animate_from_coeff = AnimateFromCoeff(sadtalker_paths, global_settings.device)
+animate_from_coeff = AnimateFromCoeff_PIRender(sadtalker_paths, global_settings.device)
+
 
 preprocess_data_dict = {}
 
@@ -140,7 +146,7 @@ def sadtalker_main(str_wavfile, str_imgpath, settings=SadTalker_Settings(), prep
     data = get_facerender_data(coeff_path, crop_pic_path, first_coeff_path, audio_path, 
                                 settings.batch_size, settings.input_yaw, settings.input_pitch, settings.input_roll,
                                 expression_scale=settings.expression_scale, still_mode=settings.still, 
-                                preprocess=settings.preprocess, size=settings.size,create_files=False)
+                                preprocess=settings.preprocess, size=settings.size,create_files=False, facemodel=args.facerender)
    
 
     # over riding audio path with temp save file from flask until ffmpeg code uses pipes

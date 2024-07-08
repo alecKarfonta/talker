@@ -11,3 +11,6 @@ openvoice/OpenVoice_git/*
 *.pyc
 .DS_Store
 /openvoice/MeloTTS
+/lipsync/checkpoints
+/lipsync/face
+/lipsync/gfpgan

@@ -9,5 +9,5 @@ fi
 
 # Run the new container
 echo "Running the new container..."
-docker run -it --name lipsync -p 7666:7666 --gpus '"device=0"' --entrypoint /bin/bash lipsync 
+docker run -it --name lipsync -p 7666:7666 -p 2229:22 --gpus '"device=0"' --entrypoint /bin/bash lipsync 
         

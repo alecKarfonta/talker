@@ -53,21 +53,15 @@ def get_data(first_coeff_path, audio_path, device, ref_eyeblink_coeff_path, stil
     syncnet_mel_step_size = 16
     fps = 25
 
-    if not isinstance(first_coeff_path, str):
-        pic_name="ialsohackedthis"
-    else:
-        pic_name = os.path.splitext(os.path.split(first_coeff_path)[-1])[0]
-        
-    if not isinstance(audio_path, str):
-        audio_name="ihackedthis"
-    else:
-        audio_name = os.path.splitext(os.path.split(audio_path)[-1])[0]
+    pic_name = os.path.splitext(os.path.split(first_coeff_path)[-1])[0]
+    audio_name = os.path.splitext(os.path.split(audio_path)[-1])[0]
 
+    
     if idlemode:
         num_frames = int(length_of_audio * 25)
         indiv_mels = np.zeros((num_frames, 80, 16))
     else:
-        wav = audio.load_wav(audio_path, 16000)
+        wav = audio.load_wav(audio_path, 16000) 
         wav_length, num_frames = parse_audio_length(len(wav), 16000, 25)
         wav = crop_pad_audio(wav, wav_length)
         orig_mel = audio.melspectrogram(wav).T
@@ -86,11 +80,7 @@ def get_data(first_coeff_path, audio_path, device, ref_eyeblink_coeff_path, stil
 
     ratio = generate_blink_seq_randomly(num_frames)      # T
     source_semantics_path = first_coeff_path
-    if isinstance(first_coeff_path,str):
-        source_semantics_dict = scio.loadmat(source_semantics_path)
-    else:
-        source_semantics_dict = first_coeff_path
-    
+    source_semantics_dict = scio.loadmat(source_semantics_path)
     ref_coeff = source_semantics_dict['coeff_3dmm'][:1,:70]         #1 70
     ref_coeff = np.repeat(ref_coeff, num_frames, axis=0)
 

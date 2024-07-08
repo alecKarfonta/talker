@@ -47,6 +47,8 @@ RUN echo 'test:test' | chpasswd
 
 RUN service ssh start
 
+EXPOSE 22
+
 
 # Expose the port the app runs on
 EXPOSE 8000

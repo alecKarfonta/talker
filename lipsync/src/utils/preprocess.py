@@ -2,7 +2,7 @@ import numpy as np
 import cv2, os, sys, torch
 from tqdm import tqdm
 from PIL import Image 
-import magic
+
 # 3dmm extraction
 import safetensors
 import safetensors.torch 
@@ -44,23 +44,6 @@ def split_coeff(coeffs):
 
 
 class CropAndExtract():
-
-    # need this other places, broke it out to a function (untested)
-    def __video_loader(input_path):    
-        # loader for videos
-        video_stream = cv2.VideoCapture(input_path)
-        fps = video_stream.get(cv2.CAP_PROP_FPS)
-        full_frames = [] 
-        while 1:
-            still_reading, frame = video_stream.read()
-            if not still_reading:
-                video_stream.release()
-                break 
-            full_frames.append(frame) 
-            if source_image_flag:
-                break
-        return full_frames
-
     def __init__(self, sadtalker_path, device):
 
         self.propress = Preprocesser(device)
@@ -77,46 +60,36 @@ class CropAndExtract():
         self.lm3d_std = load_lm3d(sadtalker_path['dir_of_BFM_fitting'])
         self.device = device
     
-    # return_filepaths=True will return string paths to files, otherwise return data or fileobjects
-    # this will save files to disk
-    def generate(self, input_path, save_dir, crop_or_resize='crop',
-                source_image_flag=False, pic_size=256,return_filepaths=True):
-        landmarks_path =  os.path.join(save_dir, 'landmarks.txt') 
-        coeff_path =  os.path.join(save_dir, 'coeff.mat')  
-        png_path =  os.path.join(save_dir, 'face.png')  
-        print('!!!',input_path)
-        if isinstance(input_path,str): # this is mostly as it was in the original
-            if not os.path.isfile(input_path):
-                raise ValueError('input_path must be a valid path to video/image file')
-            elif input_path.split('.')[-1] in ['jpg', 'png', 'jpeg']:
-                # loader for first frame
-                full_frames = [cv2.imread(input_path)]
-                fps = 25
-            else:
-                print('!! processing video file...')
-                full_frames = [] 
-                full_frames =__video_loader(input_path)
-                
-            # not sure if this is needd for videos, seems to run eithe rway, i think  you
-            # can pass cv2.COLOR_BGR2RGB to imread to skip this, if picture ends up blue
-            # its probably something to do with this
-            x_full_frames= [cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  for frame in full_frames] 
+    def generate(self, input_path, save_dir, crop_or_resize='crop', source_image_flag=False, pic_size=256):
 
+        pic_name = os.path.splitext(os.path.split(input_path)[-1])[0]  
+
+        landmarks_path =  os.path.join(save_dir, pic_name+'_landmarks.txt') 
+        coeff_path =  os.path.join(save_dir, pic_name+'.mat')  
+        png_path =  os.path.join(save_dir, pic_name+'.png')  
+
+        #load input
+        if not os.path.isfile(input_path):
+            raise ValueError('input_path must be a valid path to video/image file')
+        elif input_path.split('.')[-1] in ['jpg', 'png', 'jpeg']:
+            # loader for first frame
+            full_frames = [cv2.imread(input_path)]
+            fps = 25
         else:
-            #https://github.com/ahupp/python-magic/blob/master/magic/__init__.py#L220C5-L220C20
-            print('!! file object recived')
-            # figure out file type from file buffer, support above types
-            magic_number=magic.from_buffer(input_path.read(16)) # 16 bytes seems to work for images
-            file_type=magic_number.split(' ')[0] 
-            print('!!!magic=',magic_number)
-            input_path.seek(0) # reset file for next read
-            if file_type in ['JPEG','PNG']:
-                x_full_frames = [cv2.imdecode(np.asarray(bytearray(input_path.read()), dtype=np.uint8),cv2.IMREAD_UNCHANGED )]
-            elif file_type in ['MPEG']: # this is unsupported
-                raise ValueError('Loading Videos from File Object Not Supported yet')
-            else:
-                raise ValueError('File must be a valid PNG or JPEG')
-            
+            # loader for videos
+            video_stream = cv2.VideoCapture(input_path)
+            fps = video_stream.get(cv2.CAP_PROP_FPS)
+            full_frames = [] 
+            while 1:
+                still_reading, frame = video_stream.read()
+                if not still_reading:
+                    video_stream.release()
+                    break 
+                full_frames.append(frame) 
+                if source_image_flag:
+                    break
+
+        x_full_frames= [cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  for frame in full_frames] 
 
         #### crop images as the 
         if 'crop' in crop_or_resize.lower(): # default crop
@@ -193,7 +166,5 @@ class CropAndExtract():
             semantic_npy = np.array(video_coeffs)[:,0] 
 
             savemat(coeff_path, {'coeff_3dmm': semantic_npy, 'full_3dmm': np.array(full_coeffs)[0]})
-        if return_filepaths == True:
-            return coeff_path, png_path, crop_info
-        else:
-            return {'coeff_3dmm': semantic_npy, 'full_3dmm': np.array(full_coeffs)[0]}, cv2.cvtColor(np.array(frame), cv2.COLOR_RGB2BGR), crop_info 
+
+        return coeff_path, png_path, crop_info
