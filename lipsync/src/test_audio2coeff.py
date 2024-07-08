@@ -71,7 +71,7 @@ class Audio2Coeff():
  
         self.device = device
 
-    def generate(self, batch, coeff_save_dir, pose_style, ref_pose_coeff_path=None):
+    def generate(self, batch, coeff_save_dir, pose_style, ref_pose_coeff_path=None,return_filepaths=True):
 
         with torch.no_grad():
             #test
@@ -98,11 +98,13 @@ class Audio2Coeff():
 
             if ref_pose_coeff_path is not None: 
                  coeffs_pred_numpy = self.using_refpose(coeffs_pred_numpy, ref_pose_coeff_path)
-        
-            savemat(os.path.join(coeff_save_dir, '%s##%s.mat'%(batch['pic_name'], batch['audio_name'])),  
-                    {'coeff_3dmm': coeffs_pred_numpy})
+            if return_filepaths == True:
+                savemat(os.path.join(coeff_save_dir, '%s##%s.mat'%(batch['pic_name'], batch['audio_name'])),  
+                        {'coeff_3dmm': coeffs_pred_numpy})
 
-            return os.path.join(coeff_save_dir, '%s##%s.mat'%(batch['pic_name'], batch['audio_name']))
+                return os.path.join(coeff_save_dir, '%s##%s.mat'%(batch['pic_name'], batch['audio_name']))
+            else:
+                return  {'coeff_3dmm': coeffs_pred_numpy}
     
     def using_refpose(self, coeffs_pred_numpy, ref_pose_coeff_path):
         num_frames = coeffs_pred_numpy.shape[0]

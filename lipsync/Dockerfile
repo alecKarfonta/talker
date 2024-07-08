@@ -18,9 +18,15 @@ git \
 # Install pip for Python 3.9
 RUN wget https://bootstrap.pypa.io/get-pip.py && python3.8 get-pip.py
 
+COPY templates /app/templates
 COPY checkpoints /app/checkpoints
 COPY gfpgan /app/gfpgan
 COPY face /app/face
+COPY flask_inference.py /app/flask_inference.py
+
+COPY src /app/templates
+COPY src /app/scripts
+COPY src /app/src
 
 COPY pip.conf /root/.pip/pip.conf
 COPY requirements.txt /app/requirements.txt
@@ -45,11 +51,13 @@ run pip install opencv-python Pillow python-magic
 #run pip install yacs pydub gfpgan
 #run pip install librosa
 
-RUN git clone https://github.com/cpippenger/SadTalker-micro.git
+#RUN git clone https://github.com/cpippenger/SadTalker-micro.git
 
-RUN mv checkpoints /app/SadTalker-micro/checkpoints
-RUN mv gfpgan /app/SadTalker-micro/gfpgan
-RUN mv face /app/SadTalker-micro/face
+#RUN mv checkpoints /app/SadTalker-micro/checkpoints
+#RUN mv gfpgan /app/SadTalker-micro/gfpgan
+#RUN mv face /app/SadTalker-micro/face
+
+
 
 # THIS VERSION ONLY!
 

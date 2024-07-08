@@ -3,6 +3,7 @@ import json
 import pickle
 import threading
 import torch
+import tempfile
 from time import  strftime
 import os, sys
 import tempfile
@@ -20,6 +21,10 @@ import numpy as np
 os.system("bash scripts/download_models.sh")
 
 from src.facerender.pirender_animate import AnimateFromCoeff_PIRender
+
+# Configure logging
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 
 import platform
@@ -79,6 +84,7 @@ preprocess_data_dict = {}
 ######### sadtalker_main ################
 # need to handle file objects in args
 def sadtalker_main(str_wavfile, str_imgpath, settings=SadTalker_Settings(), preprocess_data=None, args=None):
+    logging.debug(f"sadtalker_main({str_wavfile = }, {str_imgpath = }, {settings = }, {preprocess_data = }, {args = })")
     #torch.backends.cudnn.enabled = False
     pic_path = str_imgpath
     audio_path = str_wavfile
@@ -86,6 +92,7 @@ def sadtalker_main(str_wavfile, str_imgpath, settings=SadTalker_Settings(), prep
     os.makedirs(save_dir, exist_ok=True)
     first_frame_dir = os.path.join(save_dir, 'first_frame_dir')
     os.makedirs(first_frame_dir, exist_ok=True)
+    facemodel = "pirender"
 
     if preprocess_data == None and str_imgpath not in preprocess_data_dict:
 
@@ -134,7 +141,9 @@ def sadtalker_main(str_wavfile, str_imgpath, settings=SadTalker_Settings(), prep
 
     #audio2ceoff
     batch = get_data(first_coeff_path, audio_path, settings.device, ref_eyeblink_coeff_path, still=settings.still)
-    coeff_path = audio_to_coeff.generate(batch, save_dir, settings.pose_style, ref_pose_coeff_path,return_filepaths=False)
+    coeff_path = audio_to_coeff.generate(batch, save_dir, settings.pose_style, ref_pose_coeff_path,return_filepaths=True)
+
+    logging.debug(f"sadtalker_main(): {coeff_path = }")
 
     # 3dface render (not implemented) (needs file reduction)
     if settings.face3dvis:
@@ -146,7 +155,7 @@ def sadtalker_main(str_wavfile, str_imgpath, settings=SadTalker_Settings(), prep
     data = get_facerender_data(coeff_path, crop_pic_path, first_coeff_path, audio_path, 
                                 settings.batch_size, settings.input_yaw, settings.input_pitch, settings.input_roll,
                                 expression_scale=settings.expression_scale, still_mode=settings.still, 
-                                preprocess=settings.preprocess, size=settings.size,create_files=False, facemodel=args.facerender)
+                                preprocess=settings.preprocess, size=settings.size,create_files=False, facemodel=facemodel)
    
 
     # over riding audio path with temp save file from flask until ffmpeg code uses pipes
@@ -175,8 +184,28 @@ async def run_sadtalker():
         return "No Face File"
     if request.files['wav_file'].filename == '' : 
         return "No Wav File"
+    logging.debug(f"run_sadtalker({request.files['face_file'] = }, {request.files['wav_file'] = })")
     try:
-        final_file=sadtalker_main(request.files['wav_file'],request.files['face_file'])
+        # Write the uploaded files to disk
+        face_file = request.files['face_file']
+        wav_file = request.files['wav_file']
+
+        # Write the uploaded files to disk
+        face_file_path = os.path.join(tempfile.gettempdir(), f"{uuid4()}_{face_file.filename}")
+        wav_file_path = os.path.join(tempfile.gettempdir(), f"{uuid4()}_{wav_file.filename}")
+
+        face_file.save(face_file_path)
+        wav_file.save(wav_file_path)
+
+        logging.debug(f"Saved files: {face_file_path}, {wav_file_path}")
+
+        # Call sadtalker_main with file paths
+        final_file = sadtalker_main(wav_file_path, face_file_path)
+
+        # Clean up temporary files
+        os.remove(face_file_path)
+        os.remove(wav_file_path)
+        
         return send_file(final_file,"application/octet-stream")
     except ValueError as ve:
         return "Error: " + str(ve)
@@ -207,7 +236,7 @@ async def upload_face():
 
 @app.route('/generate_avatar_message', methods = ['POST'])
 async def generate_avatar_message():
-
+    logging.debug(f"generate_avatar_message({request.files['wav_file'] = }, {request.form.get('name',None) = })")
     if request.files['wav_file'].filename == '' : 
         return "No Wav File"
     face_name=request.form.get('name',None)
