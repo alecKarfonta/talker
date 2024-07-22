@@ -37,30 +37,6 @@ def get_ninja_version():
         return None
 
 packages = [
-    "psutil",
-    "sentencepiece",
-    "numpy",
-    "requests",
-    "tqdm",
-    "py-cpuinfo",
-    "transformers",
-    "tokenizers",
-    "fastapi",
-    "aiohttp",
-    "openai",
-    "uvicorn",
-    "pydantic",
-    "pillow",
-    "prometheus_client",
-    "prometheus_fastapi_instrumentator",
-    "tiktoken",
-    "lm_format_enforcer",
-    "outlines",
-    "typing_extensions",
-    "filelock"
-]
-
-packages = [
   
     "psutil",
     "sentencepiece",
