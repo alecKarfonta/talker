@@ -33,24 +33,24 @@ services:
       - "5001:5001"
       - "2222:22"
 
-  llama_api:
-    build:
-      context: llama_api
-      dockerfile: Dockerfile
-    container_name: llama_api
-    #command: bash -c 'while !</dev/tcp/docker.for.mac.localhost/5432; do sleep 1; done;'
-    environment:
-      MODEL_NAME: mistral-layla
-    ports:
-      - "7001:7001"
-      - "8400:8000"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['0']
-              capabilities: [gpu]
+  #exllama_api:
+  #  build:
+  #    context: exllama_api
+  #    dockerfile: Dockerfile
+  #  container_name: llama_api
+  #  #command: bash -c 'while !</dev/tcp/docker.for.mac.localhost/5432; do sleep 1; done;'
+  #  environment:
+  #    MODEL_NAME: mistral-layla
+  #  ports:
+  #    - "7001:7001"
+  #    - "8400:8000"
+  #  deploy:
+  #    resources:
+  #      reservations:
+  #        devices:
+  #          - driver: nvidia
+  #            device_ids: ['0']
+  #            capabilities: [gpu]
 
   tts_api:
     build:
@@ -64,7 +64,7 @@ services:
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
     ports:
       - "8001:5001"
-      - "2223:22"
+      - "2224:22"
     deploy:
       resources:
         reservations:

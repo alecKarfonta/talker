@@ -36,14 +36,17 @@ class AnimateFromCoeff_PIRender():
     def __init__(self, sadtalker_path, device):
         logging.debug(f"{__class__.__name__}.init({sadtalker_path = }, {device = }")
         opt = Config(sadtalker_path['pirender_yaml_path'], None, is_train=False)
+        logging.debug(f"{__class__.__name__}.init(): {opt = }")
         opt.device = device
         self.net_G_ema = FaceGenerator(**opt.gen.param).to(opt.device)
         checkpoint_path = sadtalker_path['pirender_checkpoint']
+        logging.debug(f"{__class__.__name__}.init(): {checkpoint_path = }")
         checkpoint = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
         self.net_G_ema.load_state_dict(checkpoint['net_G_ema'], strict=False)
         print('load [net_G] and [net_G_ema] from {}'.format(checkpoint_path))
         self.net_G = self.net_G_ema.eval()
         self.device = device
+        logging.debug(f"{__class__.__name__}.init(): {device = }")
     
 
     def generate(self, x, video_save_dir, pic_path, crop_info, enhancer=None, background_enhancer=None, preprocess='crop', img_size=256):

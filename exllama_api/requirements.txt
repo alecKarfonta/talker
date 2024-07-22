@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+exllamav2
+huggingface_hub
+tokenizers
+tiktoken
+#llama_cpp

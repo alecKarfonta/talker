@@ -123,7 +123,7 @@ def run_tts(input_text:str, model, output_dir, source_se, target_se, speaker_id=
     src_path = f'{output_dir}/tmp.wav'
     
     logger.debug(f"run_tts(): Sending text to base model")
-    model.tts_to_file(input_text, speaker_id, src_path, speed=speed)
+    audio = model.tts_to_file(text=input_text, speaker=speaker_id, speed=speed)
     logger.debug(f"run_tts(): Saved base audio to {src_path}")
 
     logger.debug(f"run_tts(): Convert to speaker")
@@ -143,9 +143,9 @@ def run_tts(input_text:str, model, output_dir, source_se, target_se, speaker_id=
     # Read the wav file back in
     samplerate, wav = wavfile.read(save_path)
 
-    samplerate, base_wav = wavfile.read(src_path)
+    base_samplerate, base_wav = wavfile.read(src_path)
 
-    return wav, samplerate, base_wav
+    return wav, samplerate, base_wav, base_samplerate
 
 
 @app.get("/test")
@@ -171,8 +171,17 @@ def tts():
     logger.debug(f"{__name__}(): {source_se[0][0:10] = }")
         
 
-    wav, samplerate, base_wav = run_tts(text, model, output_dir, source_se, target_se, speaker_id=0, speed=1.0, tau=tau)
-    return jsonify({"wav": wav.tolist(), "base_wav": base_wav.tolist(), "samplerate": samplerate})
+    wav, samplerate, base_wav, base_samplerate = run_tts(text, model, output_dir, source_se, target_se, speaker_id=0, speed=1.0, tau=tau)
+    response = {
+                "wav": wav.tolist(), 
+                "base_wav": base_wav.tolist(), 
+                "samplerate": samplerate, 
+                "base_samplerate": base_samplerate, 
+                "voice": voice, 
+                "text": text, 
+                "tau": tau
+    }
+    return jsonify(response)
 
 
 @app.route('/list_voices', methods=['GET'])

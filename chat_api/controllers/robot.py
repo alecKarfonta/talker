@@ -7,6 +7,7 @@ import requests
 import num2words
 import pickle
 import logging
+import numpy as np
 from copy import copy
 #from accelerate import init_empty_weights
 import sys
@@ -14,6 +15,9 @@ sys.path.append("..")
 sys.path.append("../shared/") 
 
 from shared.color import Color
+
+from controllers.sentiment import Sentiment, SentimentScore
+
 
 # Get host from environment variables
 LLAMA_HOST = os.environ.get("LLAMA_HOST", "localhost")  
@@ -95,6 +99,7 @@ class Robot():
     def __init__(self, 
                  name:str,
                  persona:str,
+                 sentiment=None,
                  is_debug=False,
                 ):
         logging.info(f"{__class__.__name__}.{__name__}(): (name={name}, persona={persona})")
@@ -133,6 +138,7 @@ class Robot():
             "response_times" : []
         }
         self.max_generation_time = 10
+        self.sentiment = sentiment
         
         replace_list.extend([
             (f"{self.name} jor", " "),
@@ -233,6 +239,7 @@ class Robot():
         # Create stopping criteria for generation
         stopping_words = copy(self.stopping_words)
         stopping_words.extend([
+                            "<|im_end|>",
                             f"\n{person} ", 
                             f"\n{person}:", 
                             f"{person}:", 
@@ -246,32 +253,86 @@ class Robot():
         
         logging.info(f"{__class__.__name__}.get_robot_response(): Generating output")
 
-        endpoint = f"http://{LLAMA_HOST}:{LLAMA_PORT}/generate_text"
+        endpoint = f"http://{LLAMA_HOST}:{LLAMA_PORT}/generate"
         logging.info(f"{__class__.__name__}.get_robot_response(): {endpoint = }")
 
         payload = {
-            "user_prompt" : prompt,
-            "max_len" : max_len,
-            "response_count" : response_count,
-            "echo" : False,
-            "stop" : stopping_words
+            "prompts" : [prompt],
+            "max_new_tokens" : max_len,
+            "temperature" : 0.3,
+            "top_p" : 0.9,
+            "top_k" : 40,
+            #"response_count" : response_count,
         } 
         logging.info(f"{__class__.__name__}.get_robot_response(): {payload = }")
-
-        response = requests.post(endpoint, json=payload)
-
-        # If bad response
-        if response.status_code != 200:
-            logging.error(f"{__class__.__name__}.get_robot_response(): Bad response from llama: {response.status_code}")
-            return None
+        response_count = 1
+        if response_count == 1:
+            responses = requests.post(endpoint, json=payload)
+            # If bad response
+            if responses.status_code != 200:
+                logging.error(f"{__class__.__name__}.get_robot_response(): Bad response from llama: {response.status_code}")
+                return None
+            
+            responses = responses.json()["outputs"]
+            response = responses[0]
     
+        else:
+            responses = []
+            for _ in range(response_count):
+                response = requests.post(endpoint, json=payload)
+                responses.append(response.json()["outputs"][0])
+
+            # Score each output
+            output_scores = np.zeros(len(responses))
+            longest_output_count = 0
+            longest_output_index = 0
+            for index in range(len(responses)):
+                output = responses[index]
+                if len(output) > longest_output_count:
+                    longest_output_count = len(output)
+                    longest_output_index = index
+                sentiment = self.sentiment.get_sentiment(output)
+                #response_comment = Comment(self.robot.name, output, sentiment)
+                score = sentiment.positive_score
+                output_scores[index] = score
+                logging.info(f"{__class__.__name__}.{__name__}(): output[{index}] ")
+                logging.info(f"{__class__.__name__}.{__name__}(): \t {len(output) = }")
+                logging.info(f"{__class__.__name__}.{__name__}(): \t sentiment = {Color.F_Green}{int(100*round(sentiment.positive_score,2))} {Color.F_Red}{int(100*round(sentiment.negative_score,2))} {Color.F_White}")
+                logging.info(f"{__class__.__name__}.{__name__}(): \t {output}")
+                #logging.info(f"{__class__.__name__}.{__name__}(): \t {comment.printf()}")
+            # Get the top scoring index
+            top_index = np.argmax(output_scores)
+            #logging.info(f"{__class__.__name__}.{func_name}(): Top comment [{top_index}]")
+            # Pick the response to use
+            response = responses[top_index]
+
         # Get response
-        response = response.json()
-        generated_text = response["generated_text"]
+        #response = response.json()
+        #generated_text = response["generated_text"]
+        #return [generated_text]
+        #outputs = response["outputs"]
+        #logging.info(f"{__class__.__name__}.get_robot_response(): {len(outputs) = }")
+
+        # Remove prompt
+        response = response.replace(prompt, "")
 
         # Show response
-        logging.info(f"{__class__.__name__}.get_robot_response(): generated_text = {generated_text}")
+        logging.info(f"{__class__.__name__}.get_robot_response(): {response = }")
+        stop_word = "<|im_end|>"
+        if stop_word in response:
+            logging.debug(f"{__class__.__name__}.get_robot_response(): Cutting response at {stop_word}")
+            #response = response[0:response.index(stop_word)]
+        #response = response[0:response.index(stop_word)]
+        #for stop_word in stopping_words:
+        #    if stop_word in response:
+        #        logging.debug(f"{__class__.__name__}.get_robot_response(): Cutting response at {stop_word}")
+        #        end_index = response.index(stop_word)
+        #        logging.debug(f"{__class__.__name__}.get_robot_response(): {end_index = }")
+        #        #response = response[0:end_index]
+        #        break
 
-        return [generated_text]
+        # Show response
+        logging.info(f"{__class__.__name__}.get_robot_response(): Filtered response {response = }")
+        return response
 
     

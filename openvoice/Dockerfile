@@ -69,7 +69,11 @@ RUN pip3.9 install git+https://github.com/myshell-ai/MeloTTS.git
 
 #RUN pip install git+https://github.com/myshell-ai/MeloTTS.git
 
-RUN python3.9 -m unidic download
+# Download unidic
+#RUN python3.9 -m unidic download
+# Use pre-loaded unidic
+COPY unidic /usr/local/lib/python3.9/site-packages/unidic
+
 
 ENV LD_LIBRARY_PATH=/usr/local/lib/python3.9/dist-packages/nvidia/cudnn/lib/:$LD_LIBRARY_PATH
 ENV PATH=/usr/local/cuda/bin:$PATH

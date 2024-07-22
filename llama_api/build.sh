@@ -1,1 +1,1 @@
-docker build -t text-generation-api .
+docker build -t llama-api .

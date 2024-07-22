@@ -41,7 +41,7 @@ class SadTalker_Settings:
     pose_style=0
     batch_size=2
     size=256
-    expression_scale=1.0
+    expression_scale=0.5
     input_yaw=None
     input_pitch=None
     input_roll=None
@@ -51,9 +51,9 @@ class SadTalker_Settings:
     face3dvis=False
     still=False
     preprocess='crop'
-    verbose=False
+    verbose=True
     old_version=False
-    net_recon='resnet50'
+    net_recon='resnet30'
     init_path=None
     use_last_fc=False
     bfm_folder='./checkpoints/BFM_Fitting/'

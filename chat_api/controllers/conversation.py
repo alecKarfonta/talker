@@ -227,38 +227,10 @@ class Conversation():
         max_len = 64 + int(64 * random()) + response_length_modifier
 
         # Generate output from the robot given the prompt
-        outputs = self.robot.get_robot_response(commentor, prompt, min_len=min_len, max_len=max_len, response_count=response_count)
+        output = self.robot.get_robot_response(commentor, prompt, min_len=min_len, max_len=max_len, response_count=response_count)
 
-        if len(outputs) == 0:
-            output = "Huh I don't know what to say"
-        elif len(outputs) == 1:
-            output = outputs[0]
-        elif len(outputs) > 1:
-            # Score each output
-            output_scores = np.zeros(len(outputs))
-            longest_output_count = 0
-            longest_output_index = 0
-            for index in range(len(outputs)):
-                output = outputs[index]
-                if len(output) > longest_output_count:
-                    longest_output_count = len(output)
-                    longest_output_index = index
-                sentiment = self.sentiment.get_sentiment(output)
-                response_comment = Comment(self.robot.name, output, sentiment)
-                score = sentiment.positive_score
-                output_scores[index] = score
-                logging.info(f"{__class__.__name__}.{func_name}(): output[{index}] ")
-                logging.info(f"{__class__.__name__}.{func_name}(): \t {len(output) = }")
-                logging.info(f"{__class__.__name__}.{func_name}(): \t sentiment = {Color.F_Green}{int(100*round(sentiment.positive_score,2))} {Color.F_Red}{int(100*round(sentiment.negative_score,2))} {Color.F_White}")
-                logging.info(f"{__class__.__name__}.{func_name}(): \t {comment.printf()}")
-            # Give the longest response a boost in score
-            output_scores[longest_output_index] += 0.25
-            # Get the top scoring index
-            top_index = np.argmax(output_scores)
-            #logging.info(f"{__class__.__name__}.{func_name}(): Top comment [{top_index}]")
-            # Pick the response to use
-            output = outputs[top_index]
-
+        if prompt in output:
+            output = output.replace(prompt, "")
         # Text to speech output 
         wav, rate = None, None
         
@@ -276,6 +248,7 @@ class Conversation():
         # Create comment object
         self.chat_histories[commentor].add_comment(response_comment)
         
+        # Load random previous memories
         #if len(chat_history.dialogue) > 2:
             #logging.info(f"{__class__.__name__}.{func_name}(): last comment = {self.chat_histories[commentor].dialogue[-2].comment}")
             #logging.info(f"{__class__.__name__}.{func_name}(): {self.chat_histories[commentor].dialogue[-2].positive_sentiment}")

@@ -14,3 +14,5 @@ openvoice/OpenVoice_git/*
 /lipsync/checkpoints
 /lipsync/face
 /lipsync/gfpgan
+/llama_api/models
+/openvoice/unidic

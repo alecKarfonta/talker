@@ -163,8 +163,8 @@ async def comment_post():
     logger.debug(f"comment(): {user_comment = }")
     logger.debug(f"comment(): {response_comment = }")
 
-    logger.debug(f"comment(): {type(user_comment) = }")
-    logger.debug(f"comment(): {type(response_comment) = }")
+    #logger.debug(f"comment(): {type(user_comment) = }")
+    #logger.debug(f"comment(): {type(response_comment) = }")
     # Write document entry to db
 
     return {"message": "All good", "response": response_comment.comment, "wav" : json.dumps(wav)}, 200
