@@ -54,7 +54,7 @@ packages = [
     "lm_format_enforcer",
     "outlines",
     "typing_extensions",
-    "filelock"
+    "filelock",
   
     "fuzzywuzzy",
     "flask",
