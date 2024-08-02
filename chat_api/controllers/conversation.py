@@ -229,8 +229,10 @@ class Conversation():
         # Generate output from the robot given the prompt
         output = self.robot.get_robot_response(commentor, prompt, min_len=min_len, max_len=max_len, response_count=response_count)
 
-        if prompt in output:
-            output = output.replace(prompt, "")
+        output_text = output["choices"][0]["message"]["content"]
+
+        if prompt in output_text:
+            output_text = output_text.replace(prompt, "")
         # Text to speech output 
         wav, rate = None, None
         
@@ -241,8 +243,8 @@ class Conversation():
         #    #IPython.display.display(IPython.display.Audio(wav, rate=rate, autoplay=True))
         
         # Get sentiment for the comment
-        sentiment = self.sentiment.get_sentiment(output)
-        response_comment = Comment(self.robot.name, output, sentiment, response_to_id=user_comment.id)
+        sentiment = self.sentiment.get_sentiment(output_text)
+        response_comment = Comment(self.robot.name, output_text, sentiment, response_to_id=user_comment.id)
         #session.add(response_comment)
 
         # Create comment object
@@ -272,7 +274,7 @@ class Conversation():
                 human.add_negative_memory(Memory(prompt, comment, response))
 
         runtime = time.time() - start_time
-        tokens_per_sec = len(output.split(" ")) / runtime
+        tokens_per_sec = len(output_text.split(" ")) / runtime
         logging.info(f"{__class__.__name__}.{func_name}(): runtime = {runtime}")
         logging.info(f"{__class__.__name__}.{func_name}(): tokens_per_sec = {tokens_per_sec}")
 

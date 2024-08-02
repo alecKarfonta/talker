@@ -44,11 +44,7 @@ MODELS_DIR = "models"
 os.makedirs(MODELS_DIR, exist_ok=True)
 encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
 
-
-
 CONTEXT_SIZE = 7999
-
-
 
 # LOAD THE MODEL
 #model = Llama(
@@ -80,6 +76,189 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+class GenerateRequest(BaseModel):
+    prompts: list = Field(default=[], description="Input prompt for text generation")
+    max_new_tokens: int = Field(default=100, description="Maximum number of new tokens to generate")
+    temperature: float = Field(default=0.7, description="Sampling temperature")
+    top_p: float = Field(default=0.95, description="Top-p sampling parameter")
+    top_k: int = Field(default=40, description="Top-k sampling parameter")
+
+
+def generate_text(request: GenerateRequest):
+    settings = ExLlamaV2Sampler.Settings()
+    settings.temperature = request.temperature
+    settings.top_p = request.top_p
+    settings.top_k = request.top_k
+    
+    logging.debug(f"generate_text(): {request.prompts = }")
+
+    logging.debug(f"generate_text(): Encoding input")
+    #input_ids = tokenizer.encode(request.prompt)
+    
+    logging.debug(f"generate_text(): Generating output")
+    outputs = generator.generate_simple(
+        request.prompts,
+        num_tokens=request.max_new_tokens,
+        gen_settings=settings
+    )
+    logging.debug(f"generate_text(): Decoding output")
+    logging.debug(f"generate_text(): {type(outputs) = }")
+    logging.debug(f"generate_text(): {outputs = }")
+    #generated_text = tokenizer.decode(output)
+
+    return outputs
+
+from models.openai_response import OpenAIResponse
+
+@app.post("/generate", summary="Generate Text", description="Generates text using the currently loaded model")
+async def generate(request: GenerateRequest):
+    if generator is None:
+        raise HTTPException(status_code=400, detail="No model is currently loaded. Please use /change_model to load a model first.")
+    
+    #try:
+    outputs = generate_text(request)
+    response = []
+
+    for output in outputs:
+        response.append(
+            OpenAIResponse.create(
+                content=output,
+                model=my_model_path
+            ).to_json()
+        )
+        #response["outputs"].append(output)
+
+    return response, 200
+    #except Exception as e:
+    #    # Log the full stack trace 
+    #    logger.error(f"Error generating text: {str(e)}")
+    #    raise HTTPException(status_code=500, detail=f"Failed to generate text: {str(e)}")
+
+
+
+
+class BenchmarkRequest(BaseModel):
+    num_tokens: int = Field(default=1000, ge=1, description="Number of tokens to generate")
+    prompt: str = Field(default="Once upon a time", description="Prompt to use for generation")
+    temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Temperature for text generation")
+    num_runs: int = Field(default=3, ge=1, le=10, description="Number of benchmark runs")
+
+class BenchmarkResponse(BaseModel):
+    model_name: str
+    average_tokens_per_second: float
+    total_time: float
+    num_tokens: int
+    num_runs: int
+    individual_run_results: list
+
+@app.post("/benchmark", response_model=BenchmarkResponse, summary="Benchmark Model Performance", description="Evaluates the tokens generated per second by the model")
+def benchmark(request: BenchmarkRequest):
+    logger.info(f"Starting benchmark with {request.num_tokens} tokens, {request.num_runs} runs")
+    
+    individual_run_results = []
+    total_time = 0
+
+    #try:
+    for run in range(request.num_runs):
+        start_time = time.time()
+        
+        generate_request = GenerateRequest(prompts=["Once upon a time"], max_new_tokens=request.num_tokens)
+        
+        model_outputs = generate_text(generate_request)
+        model_output = model_outputs[0]
+
+        end_time = time.time()
+        run_time = end_time - start_time
+        tokens_generated = len(encoding.encode(model_output))
+        #tokens_generated = model_output["usage"]["completion_tokens"]
+        tokens_per_second = tokens_generated / run_time
+        
+        individual_run_results.append({
+            "run": run + 1,
+            "time": run_time,
+            "tokens_generated": tokens_generated,
+            "tokens_per_second": tokens_per_second
+        })
+        
+        total_time += run_time
+        logger.info(f"Benchmark run {run + 1} completed: {tokens_per_second:.2f} tokens/second")
+
+    average_tokens_per_second = sum(run["tokens_per_second"] for run in individual_run_results) / request.num_runs
+
+    return BenchmarkResponse(
+        model_name=my_model_path,
+        average_tokens_per_second=average_tokens_per_second,
+        total_time=total_time,
+        num_tokens=request.num_tokens,
+        num_runs=request.num_runs,
+        individual_run_results=individual_run_results
+    )
+    #except Exception as e:
+    #    logger.error(f"Benchmark error: {str(e)}")
+    #    raise HTTPException(status_code=500, detail=f"Benchmark failed: {str(e)}")
+
+
+class ModelDownloadRequest(BaseModel):
+    repo_id: str = Field(..., description="Hugging Face model repository ID")
+    filenames: Optional[str] = Field(None, description="Specific filename to download (optional)")
+    auth_token: Optional[str] = Field(None, description="Hugging Face authentication token")
+
+
+class ModelDownloadResponse(BaseModel):
+    status: str
+    message: str
+    local_path: Optional[str]
+
+
+
+def download_model(repo_id: str, filenames: Optional[List[str]] = None, auth_token: Optional[str] = None):
+    try:
+        logger.info(f"Starting download of model: {repo_id}")
+        local_dir = os.path.join(MODELS_DIR, repo_id.split('/')[-1])
+        os.makedirs(local_dir, exist_ok=True)
+        
+        if not filenames:
+            # If no specific files are requested, download all files
+            filenames = list_repo_files(repo_id, token=auth_token)
+            logging.debug(f"download_model(): Downloading files: {filenames = }")
+        
+        for filename in filenames:
+            try:
+                logging.debug(f"download_model(): Downloading file: {filename = }")
+                file_path = hf_hub_download(
+                    repo_id=repo_id,
+                    filename=filename,
+                    local_dir=local_dir,
+                    token=auth_token
+                )
+                logger.info(f"Downloaded: {filename} to {file_path}")
+            except Exception as e:
+                logger.error(f"Error downloading {filename}: {str(e)}")
+        
+        logger.info(f"Model files downloaded successfully to: {local_dir}")
+        return local_dir
+    except Exception as e:
+        logger.error(f"Error downloading model: {str(e)}")
+        raise
+
+@app.post("/download_model", response_model=ModelDownloadResponse, summary="Download Model from Hugging Face", description="Downloads all or specific files of a model from Hugging Face Hub with optional authentication")
+async def download_model_endpoint(request: ModelDownloadRequest, background_tasks: BackgroundTasks):
+    try:
+        # Start the download process in the background
+        background_tasks.add_task(download_model, request.repo_id, request.filenames, request.auth_token)
+        
+        return ModelDownloadResponse(
+            status="started",
+            message=f"Model download started for {request.repo_id}. Check logs for progress.",
+            local_path=None
+        )
+    except Exception as e:
+        logger.error(f"Error initiating model download: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to start model download: {str(e)}")
+
+
+
+
 
 
 class PromptRequest(BaseModel):
@@ -102,20 +281,6 @@ class TextResponse(BaseModel):
     outputs: list
     finish_reasons: list
     token_count: int
-
-class BenchmarkRequest(BaseModel):
-    num_tokens: int = Field(default=1000, ge=1, description="Number of tokens to generate")
-    prompt: str = Field(default="Once upon a time", description="Prompt to use for generation")
-    temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Temperature for text generation")
-    num_runs: int = Field(default=3, ge=1, le=10, description="Number of benchmark runs")
-
-class BenchmarkResponse(BaseModel):
-    model_name: str
-    average_tokens_per_second: float
-    total_time: float
-    num_tokens: int
-    num_runs: int
-    individual_run_results: list
 
 
 
@@ -272,164 +437,6 @@ def conversation_post(request: PromptRequest):
 
 
 
-class GenerateRequest(BaseModel):
-    prompts: list = Field(default=[], description="Input prompt for text generation")
-    max_new_tokens: int = Field(default=100, description="Maximum number of new tokens to generate")
-    temperature: float = Field(default=0.7, description="Sampling temperature")
-    top_p: float = Field(default=0.95, description="Top-p sampling parameter")
-    top_k: int = Field(default=40, description="Top-k sampling parameter")
-
-
-def generate_text(request: GenerateRequest):
-    settings = ExLlamaV2Sampler.Settings()
-    settings.temperature = request.temperature
-    settings.top_p = request.top_p
-    settings.top_k = request.top_k
-    
-    logging.debug(f"generate_text(): {request.prompts = }")
-
-    logging.debug(f"generate_text(): Encoding input")
-    #input_ids = tokenizer.encode(request.prompt)
-    
-    logging.debug(f"generate_text(): Generating output")
-    outputs = generator.generate_simple(
-        request.prompts,
-        num_tokens=request.max_new_tokens,
-        gen_settings=settings
-    )
-    logging.debug(f"generate_text(): Decoding output")
-    logging.debug(f"generate_text(): {type(outputs) = }")
-    logging.debug(f"generate_text(): {outputs = }")
-    #generated_text = tokenizer.decode(output)
-
-    return outputs
-
-
-@app.post("/generate", summary="Generate Text", description="Generates text using the currently loaded model")
-async def generate(request: GenerateRequest):
-    if generator is None:
-        raise HTTPException(status_code=400, detail="No model is currently loaded. Please use /change_model to load a model first.")
-    
-    #try:
-    outputs = generate_text(request)
-    response = {"outputs": []}
-    for output in outputs:
-        response["outputs"].append(output)
-
-    return response
-    #except Exception as e:
-    #    # Log the full stack trace 
-    #    logger.error(f"Error generating text: {str(e)}")
-    #    raise HTTPException(status_code=500, detail=f"Failed to generate text: {str(e)}")
-
-
-
-
-@app.post("/benchmark", response_model=BenchmarkResponse, summary="Benchmark Model Performance", description="Evaluates the tokens generated per second by the model")
-def benchmark(request: BenchmarkRequest):
-    logger.info(f"Starting benchmark with {request.num_tokens} tokens, {request.num_runs} runs")
-    
-    individual_run_results = []
-    total_time = 0
-
-    #try:
-    for run in range(request.num_runs):
-        start_time = time.time()
-        
-        generate_request = GenerateRequest(prompt="Once upon a time", max_new_tokens=request.num_tokens)
-        
-        model_output = generate_text(generate_request)
-
-        end_time = time.time()
-        run_time = end_time - start_time
-        tokens_generated = len(encoding.encode(model_output))
-        #tokens_generated = model_output["usage"]["completion_tokens"]
-        tokens_per_second = tokens_generated / run_time
-        
-        individual_run_results.append({
-            "run": run + 1,
-            "time": run_time,
-            "tokens_generated": tokens_generated,
-            "tokens_per_second": tokens_per_second
-        })
-        
-        total_time += run_time
-        logger.info(f"Benchmark run {run + 1} completed: {tokens_per_second:.2f} tokens/second")
-
-    average_tokens_per_second = sum(run["tokens_per_second"] for run in individual_run_results) / request.num_runs
-
-    return BenchmarkResponse(
-        model_name=my_model_path,
-        average_tokens_per_second=average_tokens_per_second,
-        total_time=total_time,
-        num_tokens=request.num_tokens,
-        num_runs=request.num_runs,
-        individual_run_results=individual_run_results
-    )
-    #except Exception as e:
-    #    logger.error(f"Benchmark error: {str(e)}")
-    #    raise HTTPException(status_code=500, detail=f"Benchmark failed: {str(e)}")
-
-
-class ModelDownloadRequest(BaseModel):
-    repo_id: str = Field(..., description="Hugging Face model repository ID")
-    filenames: Optional[str] = Field(None, description="Specific filename to download (optional)")
-    auth_token: Optional[str] = Field(None, description="Hugging Face authentication token")
-
-
-class ModelDownloadResponse(BaseModel):
-    status: str
-    message: str
-    local_path: Optional[str]
-
-
-
-def download_model(repo_id: str, filenames: Optional[List[str]] = None, auth_token: Optional[str] = None):
-    try:
-        logger.info(f"Starting download of model: {repo_id}")
-        local_dir = os.path.join(MODELS_DIR, repo_id.split('/')[-1])
-        os.makedirs(local_dir, exist_ok=True)
-        
-        if not filenames:
-            # If no specific files are requested, download all files
-            filenames = list_repo_files(repo_id, token=auth_token)
-            logging.debug(f"download_model(): Downloading files: {filenames = }")
-        
-        for filename in filenames:
-            try:
-                logging.debug(f"download_model(): Downloading file: {filename = }")
-                file_path = hf_hub_download(
-                    repo_id=repo_id,
-                    filename=filename,
-                    local_dir=local_dir,
-                    token=auth_token
-                )
-                logger.info(f"Downloaded: {filename} to {file_path}")
-            except Exception as e:
-                logger.error(f"Error downloading {filename}: {str(e)}")
-        
-        logger.info(f"Model files downloaded successfully to: {local_dir}")
-        return local_dir
-    except Exception as e:
-        logger.error(f"Error downloading model: {str(e)}")
-        raise
-
-@app.post("/download_model", response_model=ModelDownloadResponse, summary="Download Model from Hugging Face", description="Downloads all or specific files of a model from Hugging Face Hub with optional authentication")
-async def download_model_endpoint(request: ModelDownloadRequest, background_tasks: BackgroundTasks):
-    try:
-        # Start the download process in the background
-        background_tasks.add_task(download_model, request.repo_id, request.filenames, request.auth_token)
-        
-        return ModelDownloadResponse(
-            status="started",
-            message=f"Model download started for {request.repo_id}. Check logs for progress.",
-            local_path=None
-        )
-    except Exception as e:
-        logger.error(f"Error initiating model download: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to start model download: {str(e)}")
-
-
 
 
 from typing import Optional, List, Dict
@@ -520,14 +527,6 @@ class ChangeModelResponse(BaseModel):
     message: str
 
 
-class GenerateRequest(BaseModel):
-    prompt: str = Field(..., description="Input prompt for text generation")
-    max_new_tokens: int = Field(default=100, description="Maximum number of new tokens to generate")
-    temperature: float = Field(default=0.7, description="Sampling temperature")
-    top_p: float = Field(default=0.95, description="Top-p sampling parameter")
-    top_k: int = Field(default=40, description="Top-k sampling parameter")
-
-
 import gc
 #import torch
 
@@ -572,7 +571,7 @@ def initialize_model(model_path: str, max_seq_len: int):
         tokenizer = ExLlamaV2Tokenizer(config)
         cache = ExLlamaV2Cache(model)
         generator = ExLlamaV2BaseGenerator(model, cache, tokenizer)
-        
+        my_model_path = model_path
         logger.info(f"Model initialized successfully: {model_path}")
         return True
     except Exception as e:
