@@ -17,6 +17,8 @@ sys.path.append("../shared/")
 from shared.color import Color
 
 from controllers.sentiment import Sentiment, SentimentScore
+from models.openai_response import OpenAIResponse
+from models.generate_request import GenerateRequest
 
 
 # Get host from environment variables
@@ -192,7 +194,7 @@ class Robot():
                            min_len:int=128,
                            max_len:int=256,
                            response_count = 1
-                          ):
+                          ) -> OpenAIResponse:
         """
         Given a user the robot is interacting with and a prompt containing a new comment from the user,
         generate and return a response to the user's comment. 
@@ -223,7 +225,7 @@ class Robot():
         start_time = time.time()
         
         # Clear memory
-        logging.info(f"{__class__.__name__}.get_robot_response(): Clearing gpu memory")
+        #logging.info(f"{__class__.__name__}.get_robot_response(): Clearing gpu memory")
 
         # Randomly prepend the output with the person's name
         #if random() > .85:
@@ -256,30 +258,33 @@ class Robot():
         endpoint = f"http://{LLAMA_HOST}:{LLAMA_PORT}/generate"
         logging.info(f"{__class__.__name__}.get_robot_response(): {endpoint = }")
 
-        payload = {
-            "prompts" : [prompt],
-            "max_new_tokens" : max_len,
-            "temperature" : 0.3,
-            "top_p" : 0.9,
-            "top_k" : 40,
-            #"response_count" : response_count,
-        } 
-        logging.info(f"{__class__.__name__}.get_robot_response(): {payload = }")
+        generate_request = GenerateRequest(
+            prompts=[prompt],
+            max_new_tokens=max_len,
+            temperature=0.5,
+            top_p=0.9,
+            top_k=40,
+            response_count=1
+        )
+        
+        logging.info(f"{__class__.__name__}.get_robot_response(): {generate_request = }")
         response_count = 1
         if response_count == 1:
-            responses = requests.post(endpoint, json=payload)
+            responses = requests.post(endpoint, json=generate_request.to_dict())
             # If bad response
             if responses.status_code != 200:
-                logging.error(f"{__class__.__name__}.get_robot_response(): Bad response from llama: {response.status_code}")
+                logging.error(f"{__class__.__name__}.get_robot_response(): Bad response from llama: {responses.status_code}")
                 return None
             
-            responses = responses.json()["outputs"]
+
+            responses = responses.json()
             response = responses[0]
+            
     
         else:
             responses = []
             for _ in range(response_count):
-                response = requests.post(endpoint, json=payload)
+                response = requests.post(endpoint, data=generate_request.to_dict())
                 responses.append(response.json()["outputs"][0])
 
             # Score each output
@@ -313,15 +318,52 @@ class Robot():
         #outputs = response["outputs"]
         #logging.info(f"{__class__.__name__}.get_robot_response(): {len(outputs) = }")
 
+        response = json.loads(response[0])
+        logging.info(f"{__class__.__name__}.get_robot_response(): Response generated")
+        logging.info(f"{__class__.__name__}.get_robot_response(): {type(response) = }")
+        logging.info(f"{__class__.__class__}.get_robot_response(): {response = }")
+
+        # Pull response text
+        #response = response["choices"][0]["message"]["content"]
+
         # Remove prompt
-        response = response.replace(prompt, "")
+        #response = response.replace(prompt, "")
+
+        endtime = time.time()
+        generation_time = endtime - start_time
+        self.stats["response_times"].append(generation_time)
+        self.stats["tokens_per_sec"] = len(response) / generation_time
+        logging.info(f"{__class__.__name__}.get_robot_response(): {generation_time = }")
+        logging.info(f"{__class__.__name__}.get_robot_response(): {self.stats['tokens_per_sec'] = }")
+
+        logging.info(f"{__class__.__name__}.get_robot_response(): Response {response = }")
+        return response
+    
+        """
+        message_start_token = "<|im_start|>"
+        message_end_token = "<|im_end|>"
+
+        # If has the end token
+        if message_end_token in response:
+            # If has multiple end tokens
+            #if response.count(message_end_token) > 1:
+                # Get the first instance of the end token
+                #first_response = response.split(message_end_token)[0]
+                #response = first_response
+            # Get the first instance of the end token
+            first_response = response.split(message_end_token)[0]
+            logging.debug(f"{__class__.__name__}.get_robot_response(): Removing extra dialogue after end token")
+            response = first_response
+        """
+        #if message_start_token in response:
+        #    logging.debug(f"{__class__.__name__}.get_robot_response():  Removing extra dialogue after start token")
+        #    response = response.split(message_start_token)[1]
 
         # Show response
-        logging.info(f"{__class__.__name__}.get_robot_response(): {response = }")
-        stop_word = "<|im_end|>"
-        if stop_word in response:
-            logging.debug(f"{__class__.__name__}.get_robot_response(): Cutting response at {stop_word}")
-            #response = response[0:response.index(stop_word)]
+        #stop_word = "<|im_end|>"
+        #if stop_word in response:
+        #    logging.debug(f"{__class__.__name__}.get_robot_response(): Cutting response at {stop_word}")
+        #    #response = response[0:response.index(stop_word)]
         #response = response[0:response.index(stop_word)]
         #for stop_word in stopping_words:
         #    if stop_word in response:
@@ -332,7 +374,7 @@ class Robot():
         #        break
 
         # Show response
-        logging.info(f"{__class__.__name__}.get_robot_response(): Filtered response {response = }")
-        return response
+        #logging.info(f"{__class__.__name__}.get_robot_response(): Filtered response {response = }")
+        #return response
 
     

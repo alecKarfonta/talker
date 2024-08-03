@@ -16,3 +16,4 @@ openvoice/OpenVoice_git/*
 /lipsync/gfpgan
 /llama_api/models
 /openvoice/unidic
+.DS_Store
