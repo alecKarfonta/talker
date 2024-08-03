@@ -1,0 +1,8 @@
+version: '3.8'
+
+services:
+  text-generation-api:
+    build: .
+    ports:
+      - "8400:8000"
+    container_name: text-generation-container

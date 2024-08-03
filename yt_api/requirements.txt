@@ -10,4 +10,3 @@ psycopg2-binary
 flask-restplus
 pyyaml==6.0.1
 faker==23.1.0
-minio==7.2.3

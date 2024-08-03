@@ -1,0 +1,47 @@
+---
+swagger: '2.0'
+info:
+  title: Chat API
+  version: 1.0.0
+paths:
+  "/test":
+    get:
+      description: Test
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: Success
+
+
+  "/comment":
+    post:
+      description: Test
+      produces:
+      - application/json
+      parameters: 
+        - in: body
+          name: comment
+          schema:
+            $ref: "#/definitions/Comment"
+      responses:
+        '200':
+          description: Success
+
+
+
+definitions:
+  # Document Entries
+  Comment:
+    type: object
+    properties:
+      commentor:
+        type: string
+      comment:
+        type: string
+      sentiment:
+        type: string
+  Comments:
+    type: array
+    items:
+      $ref: "#/definitions/Comment"

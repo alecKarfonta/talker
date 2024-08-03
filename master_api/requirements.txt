@@ -1,0 +1,26 @@
+requests
+scipy
+
+# NLP
+
+# Acceleration 
+#optimum
+#auto-gptq
+
+
+# API
+flask[async]>=2.0  
+Werkzeug>=2.0
+pandas
+Flask-RESTful
+Flask-SQLAlchemy
+Flask-Marshmallow
+Marshmallow
+marshmallow-sqlalchemy
+psycopg2-binary
+flask-restplus
+flask_swagger
+flask_swagger_ui
+pyyaml==6.0.1
+
+# DB

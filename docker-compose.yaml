@@ -15,46 +15,60 @@ services:
     volumes:
       - ./db/data:/docker-entrypoint-initdb.d
 
-
-  flask_api:
+  chat_api:
     build:
-      context: api
+      context: chat_api
       dockerfile: Dockerfile
-    container_name: flask_api
+    container_name: chat_api
     #command: bash -c 'while !</dev/tcp/docker.for.mac.localhost/5432; do sleep 1; done;'
     depends_on:
       - postgres
     environment:
       DATABASE_URL: postgres://test:test@postgres/chat
+      SERVICE_PORT: 5001
+      LLAMA_HOST: 192.168.1.196      
+      DATABASE_HOST: 192.168.1.196
+      #SERVICE_HOST: 
     ports:
-      - "5000:5000"
-    volumes:
-      - ./db/data:/data
+      - "5001:5001"
+      - "2222:22"
 
+  #exllama_api:
+  #  build:
+  #    context: exllama_api
+  #    dockerfile: Dockerfile
+  #  container_name: llama_api
+  #  #command: bash -c 'while !</dev/tcp/docker.for.mac.localhost/5432; do sleep 1; done;'
+  #  environment:
+  #    MODEL_NAME: mistral-layla
+  #  ports:
+  #    - "7001:7001"
+  #    - "8400:8000"
+  #  deploy:
+  #    resources:
+  #      reservations:
+  #        devices:
+  #          - driver: nvidia
+  #            device_ids: ['0']
+  #            capabilities: [gpu]
 
-  app:
+  tts_api:
     build:
-      context: app
+      context: openvoice
       dockerfile: Dockerfile
-    container_name: app
-    #command: bash -c 'while !</dev/tcp/docker.for.mac.localhost/5432; do sleep 10; done; python app.py'
-    depends_on:
-      - postgres
+    container_name: tts_api
+    #command: bash -c 'while !</dev/tcp/docker.for.mac.localhost/5432; do sleep 1; done;'
     environment:
-      DATABASE_URL: postgres://test:test@postgres/chat
+      MODEL_NAME: mistral-layla
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
     ports:
-      - "81:81"
-    volumes:
-      - ./uploads:/uploads
-
-
-  swagger_ui:
-    image: swaggerapi/swagger-ui
-    container_name: swagger_ui
-    ports:
-      - "8080:8080"
-    environment:
-      SWAGGER_JSON: /api-docs/swagger.json
-      BASE_URL: /api-docs
-    depends_on:
-      - app
+      - "8001:5001"
+      - "2224:22"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['1']
+              capabilities: [gpu]

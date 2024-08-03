@@ -1,0 +1,46 @@
+{
+    "model" : {
+        "description" : "Trained to convert text to speech",
+        "framework" : "tortoise",
+        "name" : "tortoise",
+        "source" : "https://github.com/neonbjb/tortoise-tts",
+        "api" : "https://github.com/neonbjb/tortoise-tts", 
+        "device" : "cuda",
+        "preset" : "ultra_fast",
+        "is_quantize" : false,
+        "is_deepspeed" : true
+    },
+    "vocoder" : {
+        "speaker_wav" : "data/gits_3.wav",
+        "speed_up" : 1.27,
+        "apply_dynamic_compression" : true,
+        "apply_low_pass" : true,
+        "low_pass_cutoff" : 4000,
+        "high_pass_cutoff" : 200,
+        "apply_high_pass" : false,
+        "threshold" : -20, 
+        "ratio" : 4.0, 
+        "attack" : 5.0, 
+        "release" : 100.0
+    },
+    "synth_params" : {
+        "gpt_cond_len" : 2,
+        "top_k" : 5, 
+        "top_p" : 0.9, 
+        "temperature" : 0.000000001,
+        "length_penalty" : -2.5, 
+        "repetition_penalty" : 1.8
+    },
+    "disabled_synth_params" : {
+        "decoder_iterations" : 5,
+        "length_penalty" : 1.0, 
+        "repetition_penalty" : 2.5,
+        "cond_free_k" : 2.0,
+        "diffusion_temperature" : 1.0  
+    },
+    "silence_filter_params" : {
+        "silence_len" : 250,
+        "silence_thresh" : -50,
+        "padding" : 100
+    }
+}

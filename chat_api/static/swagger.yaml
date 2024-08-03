@@ -1,0 +1,228 @@
+---
+swagger: '2.0'
+info:
+  title: Chat API
+  version: 1.0.0
+paths:
+  "/test":
+    get:
+      description: Test
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: Success
+
+
+  "/comment":
+    post:
+      description: Test
+      produces:
+      - application/json
+      parameters: 
+        - in: body
+          name: comment
+          schema:
+            $ref: "#/definitions/Comment"
+      responses:
+        '200':
+          description: Success
+
+  "/update_persona":
+    get:
+      summary: Update the persona of the robot
+      operationId: updatePersona
+      parameters:
+        - name: persona
+          in: query
+          required: true
+          description: The new persona to be assigned to the robot
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully updated the persona
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "All good"
+        '400':
+          description: No persona provided
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No persona provided"
+
+  "/characters":
+    get:
+      tags:
+        - "characters"
+      summary: "List all characters"
+      description: "Retrieve a list of all characters"
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: "A list of all characters"
+          schema:
+            type: "object"
+            properties:
+              characters:
+                type: "object"
+                additionalProperties:
+                  type: "string"
+    post:
+      tags:
+        - "characters"
+      summary: "Add a new character"
+      description: "Add a new character to the list"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "JSON payload with character ID and name"
+          required: true
+          schema:
+            type: "object"
+            required:
+              - "id"
+              - "name"
+            properties:
+              id:
+                type: "string"
+                description: "The character ID"
+              name:
+                type: "string"
+                description: "The character name"
+      responses:
+        201:
+          description: "Character added successfully"
+          schema:
+            type: "object"
+            properties:
+              message:
+                type: "string"
+              id:
+                type: "string"
+              name:
+                type: "string"
+  "/characters/{char_id}":
+    get:
+      tags:
+        - "characters"
+      summary: "Get a character"
+      description: "Retrieve a character by ID"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "char_id"
+          in: "path"
+          required: true
+          type: "string"
+          description: "The character ID"
+      responses:
+        200:
+          description: "Character retrieved successfully"
+          schema:
+            type: "object"
+            properties:
+              id:
+                type: "string"
+              name:
+                type: "string"
+        404:
+          description: "Character not found"
+          schema:
+            type: "object"
+            properties:
+              message:
+                type: "string"
+    put:
+      tags:
+        - "characters"
+      summary: "Update a character"
+      description: "Update a character by ID"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "char_id"
+          in: "path"
+          required: true
+          type: "string"
+          description: "The character ID"
+        - in: "body"
+          name: "body"
+          description: "JSON payload with new character name"
+          required: true
+          schema:
+            type: "object"
+            required:
+              - "name"
+            properties:
+              name:
+                type: "string"
+                description: "The new character name"
+      responses:
+        200:
+          description: "Character updated successfully"
+          schema:
+            type: "object"
+            properties:
+              message:
+                type: "string"
+              id:
+                type: "string"
+              name:
+                type: "string"
+        404:
+          description: "Character not found"
+          schema:
+            type: "object"
+            properties:
+              message:
+                type
+
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+definitions:
+  # Document Entries
+  Comment:
+    type: object
+    properties:
+      commentor:
+        type: string
+      comment:
+        type: string
+      sentiment:
+        type: string
+      prompt:
+        type: string
+  Comments:
+    type: array
+    items:
+      $ref: "#/definitions/Comment"

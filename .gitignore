@@ -1,6 +1,18 @@
 
 *.wav
+tts/model_cache/*
+tts/data/*
 .DS_store
 DF_store
 *.m4a
-tts/model_cache/*
+openvoice/checkpoints_v2/*
+openvoice/resources/
+openvoice/OpenVoice_git/*
+*.pyc
+.DS_Store
+/openvoice/MeloTTS
+/lipsync/checkpoints
+/lipsync/face
+/lipsync/gfpgan
+/llama_api/models
+/openvoice/unidic

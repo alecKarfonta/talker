@@ -10,3 +10,5 @@ psycopg2-binary
 flask-restplus
 pyyaml==6.0.1
 faker==23.1.0
+requests
+scipy

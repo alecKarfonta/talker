@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TTS Reader</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" integrity="sha384-4LISF5TTJX/fLmGSxO53rV4miRxdg84mZsxmO8Rx5jGtp/LbrixFETvWa5a6sESd" crossorigin="anonymous">
+	<style>
+
+
+	.not_selected{
+   background: #eee;
+   border: 5px solid transparent;
+}
+
+.selected {
+  border: 5px solid rgb(13, 202, 240);
+}
+
+	.not_played {
+		color:white;
+		background-color:green;
+	}
+	</style>
+	<script
+	  src="https://code.jquery.com/jquery-3.7.1.min.js"
+	  integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+	  crossorigin="anonymous"></script>
+  	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script>
+	<script>
+
+		var global_playlist_length=0;
+		var global_is_playing=false;
+		var global_autoplay=false;
+		var global_queue = [];
+		
+		
+		function play(element) {
+			$( ".selected" ).each(function() {
+			  $( this ).removeClass( "selected" );
+			  $( this ).addClass( "not_selected" );
+			});
+
+			//$('#player_source')[0].src = "/cache/" + element.id;
+			localStorage.setItem(element.id, Date.now());
+			console.log(element.getAttribute('tts_file'));
+			$('#player_source')[0].src = element.getAttribute('tts_file');
+			$(element).removeClass('bg-info');
+			$(element).removeClass('not_selected');
+			$(element).addClass('selected');
+			$('#player')[0].load();
+			$('#player')[0].play();
+		}  
+
+		function toggle_autoplay(){
+			
+			if( $('#autoplay').text() ==  "Auto Play: On" )
+			{
+				global_autoplay=false;
+				$('#autoplay').text("Auto Play: Off");
+			} else {
+				global_autoplay=true;
+				$('#autoplay').text("Auto Play: On");
+			}
+			
+		}
+		
+		function player_end(element)
+		{
+			global_is_playing=false;
+			console.log("ended");
+			if(global_queue.length > 0 )
+			{
+				play(document.getElementById(global_queue.shift()))
+			}
+			
+		}
+		
+		function player_pause(element)
+		{
+			console.log("pause");
+			global_is_playing=false;
+		}
+
+			
+		function player_play(element)
+		{
+			global_is_playing=true;
+			console.log("play");
+		}		
+
+		function start_queue() {
+			if(global_queue.length > 0)
+			{
+				play(document.getElementById(global_queue.shift()))
+			}
+		}
+
+		function play_tts ()
+		{
+			global_queue = [];
+			$('.bg-info').each(function (){
+				global_queue.push(this.id);
+			});
+			start_queue();
+			
+		}
+		var global_last_seen = null;
+		function get_superchats(last_seen) {
+			if(last_seen != null)
+			{
+				since_str="?last_seen="+last_seen;
+			} else {
+				since_str="";
+			}
+			  $.ajax({url: "/get_super_chats"+since_str, success: function(result){
+			  super_chats=JSON.parse(result);
+			  output="";
+				for ( key in super_chats) {
+					console.log(super_chats[key]["id"]);
+					row = document.createElement("div");
+					row.classList.add("row", "border-top-3", "rounded-5","my-3");
+					if(localStorage.getItem(super_chats[key]["id"]) == null){
+						row.classList.add('bg-info')
+					} else {
+						row.classList.add('not_selected') // need to get the naming convention standard evrywhere
+					};
+					row.id=super_chats[key]["id"];
+					error_string=""
+					if(/^ERROR:/.test(super_chats[key]["tts_file"])) // this is jank, need better
+					{
+						$(row).removeClass("bg-info");
+						$(row).addClass("bg-warning")
+						error_string=" (" + super_chats[key]["tts_file"] + ")"
+						
+					} else {
+						row.onclick = function ()
+						{
+							play(this);
+						}
+						row.setAttribute("tts_file",super_chats[key]["tts_file"]);
+					}
+					sm_col = document.createElement("div");
+					sm_col.classList.add("col-sm");					
+					p = document.createElement("p");
+					p.classList.add("p-3","m-0");
+					$(p).text(super_chats[key]["datetime_uploaded"].slice(0,-10) + ' | ' + super_chats[key]["amount"]   + ' | ' + super_chats[key]["username"] + ' | ' +   super_chats[key]["text"] + error_string);					
+
+					row.appendChild(sm_col);
+					sm_col.appendChild(p);
+					document.getElementById('superchats').appendChild(row);
+					
+					global_last_seen=super_chats[key]["datetime_uploaded"];
+					if(global_autoplay == true) {
+						global_queue.push(super_chats[key]["id"]);
+					}
+					
+				}
+				$("#superchats").append(output);
+				if(global_autoplay == true)
+				{
+					start_queue();
+				}
+				}});
+				if($('#autoplay').text() ==  "Auto Play: On"){
+					play_unseen();
+				}
+
+		}
+		 // this is all very lazy lol
+		function newTTS(username,amount,text){
+			data={"username":$('#newtts_name')[0].value,"text":$('#newtts_text')[0].value,"amount":$('#newtts_amount')[0].value}
+			$.post({url: "/insert_super_chat",data: JSON.stringify(data),  contentType:"application/json; charset=utf-8",
+  dataType:"json", success: function(result){
+				console.log(result.status);
+				$('#newttsoutput').text(result.status)
+				}
+			});
+		}
+		
+		
+	function update_default(element)
+		{
+			$.ajax({url: "/update-default?name="+element.options[element.selectedIndex].text});
+			
+		}
+$( document ).ready(function() {
+    get_superchats(null);
+				const interval = setInterval(function() {
+				   get_superchats(global_last_seen);
+				 }, 5000);	
+});
+
+	</script>
+</head>
+<main>
+
+<div class="container">
+    <header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom">
+      <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
+        
+        <span class="fs-4">TTS Reader</span>
+      </a>
+
+      <div class="nav col-lg-7">
+	  
+<div class="form-floating ">
+  <select  onchange="update_default(this);" class="form-select form-select" id="floatingSelect" aria-label="Floating label select example">
+{% for item in endpoints %}   
+    <option {% if item == current_endpoint %} selected  {% endif %} >{{ item|safe }} </option>
+{% endfor %}
+
+  </select>
+  <label for="floatingSelect">Default Voice</label>
+</div>
+<button class="btn btn-outline-secondary" type="button"  onclick="play_tts ()" >Play TTS</button><button id=autoplay class="btn btn-outline-secondary" type="button"  onclick="toggle_autoplay()" >Auto Play: Off</button><button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#uploadZip">
+  uploadZip
+</button><button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#newTTS">
+  new TTS
+</button>
+      </div>
+    </header>
+  </div>
+  
+   
+  <div class="container w-100  my-1">
+<div class="row">
+
+<audio id=player  controls  onplay="player_play(this)" onpause="player_pause(this)" onended="player_end(this)" ><source id=player_source src="" ></audio>
+</div>
+</div>
+
+<div class="container w-75" id="superchats">
+
+</div>
+
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadZip" tabindex="-1" role="dialog"  aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+
+      <div class="modal-body">
+       <p> Upload zip file of wavs</p>
+	   <form  enctype="multipart/form-data" action="/upload" method=post >
+	   <input name="file" type="file" accept=".zip" />
+	   <input type="submit" /></form>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- new tts Modal -->
+<div class="modal fade" id="newTTS" tabindex="-1" role="dialog"  aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+
+      <div class="modal-body">
+       <p> NewTTS <a  href='/clear-all'>&nbsp;Clear All&nbsp; </a></p>
+		<p id="newttsoutput" ></p>
+		Username: <input id='newtts_name' name="username" /><br />
+		Amount: <input id="newtts_amount" /><br />
+	   Text: <input id="newtts_text" /><br />
+	   <button onclick="newTTS()" >test</button>
+
+
+    </div>
+  </div>
+</div>
+</main>
+</html>

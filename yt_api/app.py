@@ -58,6 +58,7 @@ app = Flask(__name__)
 
 @app.get("/test")
 async def root():
+    logger.debug("test")
     return {"message": "All good"}
 
 

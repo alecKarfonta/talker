@@ -38,5 +38,5 @@ class Voice(Base):
             "id" : str(self.id),
             "voice_name" : self.voice_name,
             "file_list" : self.file_list,
-            "date_uploaded" : self.date_uploaded
+            "date_uploaded" : str(self.date_uploaded)
         }
