@@ -31,6 +31,7 @@ aiohttp==3.8.6
 redis==5.0.1
 anyio
 python-multipart
+
 sqlalchemy
 psycopg2-binary
 

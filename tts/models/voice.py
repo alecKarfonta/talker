@@ -7,8 +7,8 @@ Base = declarative_base()
 class Voice(Base):
     __tablename__ = 'voice'
 
-    id = Column(Integer, nullable=True, unique=True)
-    voice_name = Column(String(100), primary_key=True, nullable=False, unique=True)
+    id = Column(UUID, primary_key=True, nullable=False, unique=True)
+    voice_name = Column(String(100), nullable=False, unique=False)
     # List of wav files to use for sampling
     file_list = Column(ARRAY(String), nullable=False, unique=False)
     # A fallback list of files to pull from when generation fails

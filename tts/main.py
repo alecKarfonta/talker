@@ -198,7 +198,6 @@ session.commit()
 session.close()
 
 
-
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     #try:
@@ -301,7 +300,7 @@ async def set_config(config: dict):
     Given a config dict similar to voicebox_config.json, update the live voicebox instance
     with the new config values.
     """
-    logger.debug(f"TTS.set-config({config = })")
+    logger.debug(f"MessageQueue.set-config({config = })")
     voice_box.config = config
     voice_box.synth_params = config["synth_params"]
     voice_box.silence_filter_params = config["silence_filter_params"]
@@ -364,7 +363,6 @@ def push_to_queue(
         logger.debug(f"TTS.push_to_queue(): {np.max(wav) =  :.3f}")
         logger.debug(f"TTS.push_to_queue(): {np.mean(wav) =  :.2f}")
         #logger.debug(f"TTS.push_to_queue(): {json_wav[0:100] = }")
-    
     # If received a numpy array
     if isinstance(json_wav, np.ndarray):
         # Convert numpy array to normal python list
@@ -411,6 +409,7 @@ def get_tts_with_retry(
     # If read speed is outside valid range
     if should_retry and (read_speed < read_speed_lower_threshold or read_speed > read_speed_upper_threshold):
         logger.warning(f"TTS.process_text(): Bad read speed detected : {read_speed = :.2f}")
+
         
         # Save initial and subsequent reads along with their read speed
         all_reads = [
@@ -446,6 +445,7 @@ def get_tts_with_retry(
             logger.warning(f"TTS.process_text(): Retying with : {voice_box.speaker_wav =}")
             #logger.warning(f"TTS.process_text(): {type(voice_box.speaker_wav) =}")
             #logger.warning(f"TTS.process_text(): {type(voice_box.speaker_wav[0]) =}")
+
             # Get audio output from TTS
             wav, rate, wavs = voice_box.read_text(
                                 text,
@@ -462,6 +462,7 @@ def get_tts_with_retry(
             )
 
             logger.debug(f"TTS.process_text(): {read_speed =  :.2f}")
+
             retry_attempt += 1
             if retry_attempt > retry_attempts: 
                 break
@@ -485,6 +486,7 @@ def get_tts_with_retry(
         # If still has a bad read speed
         if read_speed < read_speed_lower_threshold or read_speed > read_speed_upper_threshold:
             logger.error(f"TTS.process_text(): Could not generate valid audio for {text = }")
+
             #continue
     
 
@@ -530,6 +532,7 @@ def process_text(
     """
     logger.info(f"TTS.process_text()")
     logger.debug(f"TTS.process_text({text = }, {push_chunks = }, {return_full = }, {speed = }, {voice_clone = })")
+
     # If given an empty string
     if not text or text.strip() == "":
         # Return nothing
@@ -560,10 +563,28 @@ def process_text(
         voice_box.speaker_wav = voice_catalogue["major"].file_list
         voice_clone = "major"
     
+    # If given voice is in catalogue
+    if voice_clone in voice_catalogue:
+        logger.debug(f"Reader.process_text(): Using voice from catalogue {voice_clone} : {voice_catalogue[voice_clone].file_list}")
+        # Set speaker wavs
+        voice_box.speaker_wav = voice_catalogue[voice_clone].file_list
 
-    logger.warning(f"TTS.process_text(): {voice_box.speaker_wav = }")
-    #logger.warning(f"TTS.process_text(): {type(voice_box.speaker_wav) = }")
-    #logger.warning(f"TTS.process_text(): {type(voice_box.speaker_wav[0]) = }")
+    # If given voice is a filename or list of filenames
+    elif ".wav" in voice_clone:
+        logger.debug(f"Reader.process_text(): Using custom voice file list {voice_clone}")
+        voice_box.speaker_wav = voice_clone
+
+    # Unknowen voice value
+    else:
+        logger.error(f"Reader.process_text(): Could not recognize {voice_clone = } defaulting to major")
+        # Default to major voice
+        voice_box.speaker_wav = voice_catalogue["major"].file_list
+        voice_clone = "major"
+    
+
+    logger.warning(f"Reader.process_text(): {voice_box.speaker_wav = }")
+    #logger.warning(f"Reader.process_text(): {type(voice_box.speaker_wav) = }")
+    #logger.warning(f"Reader.process_text(): {type(voice_box.speaker_wav[0]) = }")
 
     # If text contains silence tokens or is long text
     if "." in text or len(text) > 250:

@@ -9,5 +9,6 @@ docker run --rm \
         -e COQUI_TOS_AGREED=1 \
         -e DATABASE_HOST='192.168.1.4' \
         -w /app \
-        -d \
+        --entrypoint /bin/bash \
+        -it \
         reader

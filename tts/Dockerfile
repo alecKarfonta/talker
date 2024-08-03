@@ -26,7 +26,6 @@ ENV COQUI_TOS_AGREED = 1
 #COPY models/tts_models--multilingual--multi-dataset--xtts_v1.1 /root/.local/share/tts/tts_models--multilingual--multi-dataset--xtts_v1.1
 COPY model_cache/tts_models--multilingual--multi-dataset--xtts_v2.0.2  /root/.local/share/tts/tts_models--multilingual--multi-dataset--xtts_v2.0.2
 
-
 # Install OpenSSH server
 RUN apt-get update && \
     apt-get install -y openssh-server
